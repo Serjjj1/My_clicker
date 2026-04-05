@@ -4,11 +4,71 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Печеньковый кликер</title>
     <style>
-        body { text-align: center; font-family: Arial; background: #f0e68c; }
-        #score { font-size: 48px; color: #b8860b; margin: 20px; }
-        .cookie { font-size: 80px; background: #deb887; border: none; border-radius: 100px; padding: 20px; cursor: pointer; transition: 0.1s; }
-        .cookie:active { transform: scale(0.95); }
-        button { margin: 10px; padding: 10px 20px; font-size: 18px; background: #8b4513; color: white; border: none; border-radius: 15px; }
+        body {
+    text-align: center;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b5 100%);
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+}
+h1 {
+    color: #c47b3e;
+    text-shadow: 3px 3px 0 #ffd966;
+    font-size: 32px;
+    margin-top: 10px;
+}
+#score {
+    font-size: 56px;
+    font-weight: bold;
+    color: #8b4513;
+    background: rgba(255,255,200,0.8);
+    display: inline-block;
+    padding: 10px 30px;
+    border-radius: 60px;
+    margin: 10px;
+    box-shadow: 0 5px 0 #d2b48c;
+}
+.cookie {
+    font-size: 100px;
+    background: radial-gradient(circle at 30% 30%, #f5bc70, #d28b3a);
+    border: none;
+    border-radius: 120px;
+    padding: 25px 35px;
+    cursor: pointer;
+    transition: all 0.1s ease;
+    box-shadow: 0 10px 0 #8b4513;
+    margin: 15px;
+}
+.cookie:active {
+    transform: translateY(5px);
+    box-shadow: 0 5px 0 #8b4513;
+}
+button {
+    margin: 8px;
+    padding: 10px 20px;
+    font-size: 18px;
+    font-weight: bold;
+    background: #c47b3e;
+    color: white;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: 0.2s;
+    box-shadow: 0 3px 0 #6b2e00;
+}
+button:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #6b2e00;
+}
+p {
+    font-size: 18px;
+    background: #fff0d4;
+    display: inline-block;
+    padding: 5px 15px;
+    border-radius: 30px;
+    color: #a0522d;
+}
     </style>
 </head>
 <body>

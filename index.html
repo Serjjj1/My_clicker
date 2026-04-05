@@ -1,28 +1,76 @@
-<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мой кликер</title>
+    <title>Печеньковый кликер</title>
     <style>
-        body { text-align: center; font-family: Arial; margin-top: 50px; }
-        #counter { font-size: 48px; font-weight: bold; color: #0088cc; }
-        button { font-size: 24px; padding: 15px 30px; background: #ffcc00; border: none; border-radius: 15px; }
+        body { text-align: center; font-family: Arial; background: #f0e68c; }
+        #score { font-size: 48px; color: #b8860b; margin: 20px; }
+        .cookie { font-size: 80px; background: #deb887; border: none; border-radius: 100px; padding: 20px; cursor: pointer; transition: 0.1s; }
+        .cookie:active { transform: scale(0.95); }
+        button { margin: 10px; padding: 10px 20px; font-size: 18px; background: #8b4513; color: white; border: none; border-radius: 15px; }
     </style>
 </head>
 <body>
-    <h1>🍪 Кликер</h1>
-    <div id="counter">0</div>
-    <br>
-    <button onclick="clickCookie()">Кликни меня!</button>
-
+    <h1>🍪 Печеньковый кликер</h1>
+    <div id="score">0</div>
+    <button class="cookie" onclick="clickCookie()">🍪</button>
+    <div>
+        <button onclick="buyUpgrade()">📈 Улучшить клик (+1 за клик) - Цена: 50</button>
+        <p>Уровень клика: <span id="clickLevel">1</span></p>
+        <button onclick="buyAuto()">🤖 Купить автокликер - Цена: 100</button>
+        <p>Автокликеров: <span id="autoCount">0</span></p>
+    </div>
     <script>
-        let count = 0;
-        function clickCookie() {
-            count++;
-            document.getElementById('counter').innerText = count;
-            // Вибрация на телефоне (если доступно)
-            if (navigator.vibrate) navigator.vibrate(50);
+        let score = localStorage.score ? parseInt(localStorage.score) : 0;
+        let clickLevel = localStorage.clickLevel ? parseInt(localStorage.clickLevel) : 1;
+        let autoClickers = localStorage.autoClickers ? parseInt(localStorage.autoClickers) : 0;
+        
+        document.getElementById('score').innerText = score;
+        document.getElementById('clickLevel').innerText = clickLevel;
+        document.getElementById('autoCount').innerText = autoClickers;
+        
+        function save() {
+            localStorage.score = score;
+            localStorage.clickLevel = clickLevel;
+            localStorage.autoClickers = autoClickers;
         }
+        
+        function clickCookie() {
+            score += clickLevel;
+            document.getElementById('score').innerText = score;
+            save();
+        }
+        
+        function buyUpgrade() {
+            let cost = 50;
+            if (score >= cost) {
+                score -= cost;
+                clickLevel++;
+                document.getElementById('score').innerText = score;
+                document.getElementById('clickLevel').innerText = clickLevel;
+                save();
+            } else alert("Не хватает печенек!");
+        }
+        
+        function buyAuto() {
+            let cost = 100;
+            if (score >= cost) {
+                score -= cost;
+                autoClickers++;
+                document.getElementById('score').innerText = score;
+                document.getElementById('autoCount').innerText = autoClickers;
+                save();
+            } else alert("Не хватает печенек!");
+        }
+        
+        setInterval(() => {
+            if (autoClickers > 0) {
+                score += autoClickers;
+                document.getElementById('score').innerText = score;
+                save();
+            }
+        }, 3000);
     </script>
 </body>
 </html>

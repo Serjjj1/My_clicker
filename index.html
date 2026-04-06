@@ -5,76 +5,85 @@
     <title>Печеньковый кликер</title>
     <style>
         body {
-    text-align: center;
-    font-family: 'Segoe UI', Arial, sans-serif;
-    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b5 100%);
-    min-height: 100vh;
-    margin: 0;
-    padding: 20px;
-}
-h1 {
-    color: #c47b3e;
-    text-shadow: 3px 3px 0 #ffd966;
-    font-size: 32px;
-    margin-top: 10px;
-}
-#score {
-    font-size: 56px;
-    font-weight: bold;
-    color: #8b4513;
-    background: rgba(255,255,200,0.8);
-    display: inline-block;
-    padding: 10px 30px;
-    border-radius: 60px;
-    margin: 10px;
-    box-shadow: 0 5px 0 #d2b48c;
-}
-.cookie {
-    font-size: 100px;
-    background: radial-gradient(circle at 30% 30%, #f5bc70, #d28b3a);
-    border: none;
-    border-radius: 120px;
-    padding: 25px 35px;
-    cursor: pointer;
-    transition: all 0.1s ease;
-    box-shadow: 0 10px 0 #8b4513;
-    margin: 15px;
-}
-.cookie:active {
-    transform: translateY(5px);
-    box-shadow: 0 5px 0 #8b4513;
-}
-button {
-    margin: 8px;
-    padding: 10px 20px;
-    font-size: 18px;
-    font-weight: bold;
-    background: #c47b3e;
-    color: white;
-    border: none;
-    border-radius: 30px;
-    cursor: pointer;
-    transition: 0.2s;
-    box-shadow: 0 3px 0 #6b2e00;
-}
-button:active {
-    transform: translateY(2px);
-    box-shadow: 0 1px 0 #6b2e00;
-}
-p {
-    font-size: 18px;
-    background: #fff0d4;
-    display: inline-block;
-    padding: 5px 15px;
-    border-radius: 30px;
-    color: #a0522d;
-}
+            text-align: center;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b5 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #c47b3e;
+            text-shadow: 3px 3px 0 #ffd966;
+            font-size: 32px;
+            margin-top: 10px;
+        }
+        #score {
+            font-size: 56px;
+            font-weight: bold;
+            color: #8b4513;
+            background: rgba(255,255,200,0.8);
+            display: inline-block;
+            padding: 10px 30px;
+            border-radius: 60px;
+            margin: 10px;
+            box-shadow: 0 5px 0 #d2b48c;
+        }
+        .cookie {
+            font-size: 100px;
+            background: radial-gradient(circle at 30% 30%, #f5bc70, #d28b3a);
+            border: none;
+            border-radius: 120px;
+            padding: 25px 35px;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            box-shadow: 0 10px 0 #8b4513;
+            margin: 15px;
+        }
+        .cookie:active {
+            transform: translateY(5px);
+            box-shadow: 0 5px 0 #8b4513;
+        }
+        button {
+            margin: 8px;
+            padding: 10px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            background: #c47b3e;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 3px 0 #6b2e00;
+        }
+        button:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 #6b2e00;
+        }
+        p {
+            font-size: 18px;
+            background: #fff0d4;
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 30px;
+            color: #a0522d;
+        }
+        @keyframes shake {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(10deg) scale(1.1); }
+            75% { transform: rotate(-5deg) scale(1.05); }
+            100% { transform: rotate(0deg); }
+        }
+        .cookie-click {
+            animation: shake 0.2s ease-in-out;
+        }
     </style>
 </head>
 <body>
     <h1>🍪 Печеньковый кликер</h1>
     <div id="score">0</div>
-    <button class="cookie" onclick="clickCookie()">🍪</button>
+    <button class="cookie" onclick="clickCookie(event)">🍪</button>
     <div>
         <button onclick="buyUpgrade()">📈 Улучшить клик (+1 за клик) - Цена: 50</button>
         <p>Уровень клика: <span id="clickLevel">1</span></p>
@@ -96,33 +105,29 @@ p {
             localStorage.autoClickers = autoClickers;
         }
         
-        function clickCookie() {
+        function clickCookie(event) {
             score += clickLevel;
             document.getElementById('score').innerText = score;
             save();
+            
+            let cookieBtn = document.querySelector('.cookie');
+            cookieBtn.classList.add('cookie-click');
+            setTimeout(() => cookieBtn.classList.remove('cookie-click'), 200);
+            
+            let floatText = document.createElement('div');
+            floatText.innerText = '+'+clickLevel;
+            floatText.style.position = 'absolute';
+            floatText.style.left = (event.clientX - 20) + 'px';
+            floatText.style.top = (event.clientY - 30) + 'px';
+            floatText.style.fontSize = '28px';
+            floatText.style.fontWeight = 'bold';
+            floatText.style.color = '#ffaa33';
+            floatText.style.textShadow = '1px 1px 0 #8b4513';
+            floatText.style.pointerEvents = 'none';
+            floatText.style.zIndex = '1000';
+            document.body.appendChild(floatText);
+            setTimeout(() => floatText.remove(), 500);
         }
-
-        function clickCookie() {
-    score += clickLevel;
-    document.getElementById('score').innerText = score;
-    save();
-    
-    // === НАЧАЛО: Визуальный эффект +1 ===
-    let floatText = document.createElement('div');
-    floatText.innerText = '+'+clickLevel;
-    floatText.style.position = 'absolute';
-    floatText.style.left = (event.clientX - 20) + 'px';
-    floatText.style.top = (event.clientY - 30) + 'px';
-    floatText.style.fontSize = '28px';
-    floatText.style.fontWeight = 'bold';
-    floatText.style.color = '#ffaa33';
-    floatText.style.textShadow = '1px 1px 0 #8b4513';
-    floatText.style.pointerEvents = 'none';
-    floatText.style.zIndex = '1000';
-    document.body.appendChild(floatText);
-    setTimeout(() => floatText.remove(), 500);
-    // === КОНЕЦ: Визуальный эффект ===
-}
         
         function buyUpgrade() {
             let cost = 50;

@@ -101,6 +101,28 @@ p {
             document.getElementById('score').innerText = score;
             save();
         }
+
+        function clickCookie() {
+    score += clickLevel;
+    document.getElementById('score').innerText = score;
+    save();
+    
+    // === НАЧАЛО: Визуальный эффект +1 ===
+    let floatText = document.createElement('div');
+    floatText.innerText = '+'+clickLevel;
+    floatText.style.position = 'absolute';
+    floatText.style.left = (event.clientX - 20) + 'px';
+    floatText.style.top = (event.clientY - 30) + 'px';
+    floatText.style.fontSize = '28px';
+    floatText.style.fontWeight = 'bold';
+    floatText.style.color = '#ffaa33';
+    floatText.style.textShadow = '1px 1px 0 #8b4513';
+    floatText.style.pointerEvents = 'none';
+    floatText.style.zIndex = '1000';
+    document.body.appendChild(floatText);
+    setTimeout(() => floatText.remove(), 500);
+    // === КОНЕЦ: Визуальный эффект ===
+}
         
         function buyUpgrade() {
             let cost = 50;

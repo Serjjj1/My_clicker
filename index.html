@@ -106,6 +106,8 @@
         }
         
         function clickCookie(event) {
+            // Проиграть звук клика
+            document.getElementById('clickSound').play().catch(e => console.log("Звук не сыграл:", e));
             score += clickLevel;
             document.getElementById('score').innerText = score;
             save();

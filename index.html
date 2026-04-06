@@ -91,6 +91,7 @@
         <p>Автокликеров: <span id="autoCount">0</span></p>
     </div>
     <script>
+        let soundIndex = 0;
         let score = localStorage.score ? parseInt(localStorage.score) : 0;
         let clickLevel = localStorage.clickLevel ? parseInt(localStorage.clickLevel) : 1;
         let autoClickers = localStorage.autoClickers ? parseInt(localStorage.autoClickers) : 0;
@@ -107,7 +108,9 @@
         
         function clickCookie(event) {
             // Проиграть звук клика
-            document.getElementById('clickSound').play().catch(e => console.log("Звук не сыграл:", e));
+let soundId = 'clickSound' + soundIndex;
+document.getElementById(soundId).play().catch(e => console.log("Звук не сыграл:", e));
+soundIndex = (soundIndex + 1) % 10;
             
             score += clickLevel;
             document.getElementById('score').innerText = score;
@@ -162,8 +165,29 @@
             }
         }, 3000);
     </script>
-    <!-- Аудиоплеер (скрытый) -->
-<audio id="clickSound" preload="auto">
+<audio id="clickSound0" preload="auto">
+    <source src="clicking.wav" type="audio/wav">
+</audio>
+<audio id="clickSound1" preload="auto">
+    <source src="clicking.wav" type="audio/wav">
+</audio>
+<audio id="clickSound2" preload="auto">
+    <source src="clicking.wav" type="audio/wav">
+</audio>
+<audio id="clickSound3" preload="auto">
+    <source src="clicking.wav" type="audio/wav">
+</audio>
+<audio id="clickSound4" preload="auto">
+    <source src="clicking.wav" type="audio/wav">
+<audio id="clickSound5" preload="auto">
+    <source src="clicking.wav" type="audio/wav">
+<audio id="clickSound6" preload="auto">
+    <source src="clicking.wav" type="audio/wav">
+<audio id="clickSound7" preload="auto">
+    <source src="clicking.wav" type="audio/wav">
+<audio id="clickSound8" preload="auto">
+    <source src="clicking.wav" type="audio/wav">
+<audio id="clickSound9" preload="auto">
     <source src="clicking.wav" type="audio/wav">
 </audio>
 </body>

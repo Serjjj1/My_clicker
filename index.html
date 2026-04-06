@@ -92,6 +92,12 @@
     </div>
     <script>
         let soundIndex = 0;
+          // Функция безопасной вибрации
+        function vibrate(duration) {
+            if (navigator.vibrate) {
+                navigator.vibrate(duration);
+            }
+        }
         let score = localStorage.score ? parseInt(localStorage.score) : 0;
         let clickLevel = localStorage.clickLevel ? parseInt(localStorage.clickLevel) : 1;
         let autoClickers = localStorage.autoClickers ? parseInt(localStorage.autoClickers) : 0;
@@ -107,9 +113,10 @@
         }
         
         function clickCookie(event) {
-    score += clickLevel;
-    document.getElementById('score').innerText = score;
-    save();
+            vibrate(15);  // Очень короткая, едва заметная вибрация
+            score += clickLevel;
+            document.getElementById('score').innerText = score;
+            save();
     
     // === НОВАЯ СИСТЕМА ЗВУКА С НАЛОЖЕНИЕМ ===
     let soundId = 'clickSound' + soundIndex;
@@ -149,6 +156,7 @@
             let cost = 50;
             if (score >= cost) {
                 score -= cost;
+                vibrate(30);
                 clickLevel++;
                 document.getElementById('score').innerText = score;
                 document.getElementById('clickLevel').innerText = clickLevel;
@@ -160,6 +168,7 @@
             let cost = 100;
             if (score >= cost) {
                 score -= cost;
+                vibrate(30);
                 autoClickers++;
                 document.getElementById('score').innerText = score;
                 document.getElementById('autoCount').innerText = autoClickers;

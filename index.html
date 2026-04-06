@@ -107,32 +107,42 @@
         }
         
         function clickCookie(event) {
-            // Проиграть звук клика
-let soundId = 'clickSound' + soundIndex;
-document.getElementById(soundId).play().catch(e => console.log("Звук не сыграл:", e));
-soundIndex = (soundIndex + 1) % 10;
-            
-            score += clickLevel;
-            document.getElementById('score').innerText = score;
-            save();
-            
-            let cookieBtn = document.querySelector('.cookie');
-            cookieBtn.classList.add('cookie-click');
-            setTimeout(() => cookieBtn.classList.remove('cookie-click'), 200);
-            
-            let floatText = document.createElement('div');
-            floatText.innerText = '+'+clickLevel;
-            floatText.style.position = 'absolute';
-            floatText.style.left = (event.clientX - 20) + 'px';
-            floatText.style.top = (event.clientY - 30) + 'px';
-            floatText.style.fontSize = '28px';
-            floatText.style.fontWeight = 'bold';
-            floatText.style.color = '#ffaa33';
-            floatText.style.textShadow = '1px 1px 0 #8b4513';
-            floatText.style.pointerEvents = 'none';
-            floatText.style.zIndex = '1000';
-            document.body.appendChild(floatText);
-            setTimeout(() => floatText.remove(), 500);
+    score += clickLevel;
+    document.getElementById('score').innerText = score;
+    save();
+    
+    // === НОВАЯ СИСТЕМА ЗВУКА С НАЛОЖЕНИЕМ ===
+    let soundId = 'clickSound' + soundIndex;
+    let audioElement = document.getElementById(soundId);
+    
+    // Останавливаем текущий звук (если играет) и перематываем в начало
+    audioElement.pause();
+    audioElement.currentTime = 0;
+    // Запускаем заново
+    audioElement.play().catch(e => console.log("Звук заблокирован:", e));
+    
+    soundIndex = (soundIndex + 1) % 6;
+    // === КОНЕЦ НОВОЙ СИСТЕМЫ ===
+    
+    // Анимация печеньки
+    let cookieBtn = document.querySelector('.cookie');
+    cookieBtn.classList.add('cookie-click');
+    setTimeout(() => cookieBtn.classList.remove('cookie-click'), 200);
+    
+    // Всплывающий текст
+    let floatText = document.createElement('div');
+    floatText.innerText = '+'+clickLevel;
+    floatText.style.position = 'absolute';
+    floatText.style.left = (event.clientX - 20) + 'px';
+    floatText.style.top = (event.clientY - 30) + 'px';
+    floatText.style.fontSize = '28px';
+    floatText.style.fontWeight = 'bold';
+    floatText.style.color = '#ffaa33';
+    floatText.style.textShadow = '1px 1px 0 #8b4513';
+    floatText.style.pointerEvents = 'none';
+    floatText.style.zIndex = '1000';
+    document.body.appendChild(floatText);
+    setTimeout(() => floatText.remove(), 500);
         }
         
         function buyUpgrade() {
@@ -165,6 +175,7 @@ soundIndex = (soundIndex + 1) % 10;
             }
         }, 3000);
     </script>
+<!-- Пул аудиоплееров с принудительной перезагрузкой -->
 <audio id="clickSound0" preload="auto">
     <source src="clicking.wav" type="audio/wav">
 </audio>
@@ -179,14 +190,19 @@ soundIndex = (soundIndex + 1) % 10;
 </audio>
 <audio id="clickSound4" preload="auto">
     <source src="clicking.wav" type="audio/wav">
+</audio>
 <audio id="clickSound5" preload="auto">
     <source src="clicking.wav" type="audio/wav">
+</audio>
 <audio id="clickSound6" preload="auto">
     <source src="clicking.wav" type="audio/wav">
+</audio>
 <audio id="clickSound7" preload="auto">
     <source src="clicking.wav" type="audio/wav">
+</audio>
 <audio id="clickSound8" preload="auto">
     <source src="clicking.wav" type="audio/wav">
+</audio>
 <audio id="clickSound9" preload="auto">
     <source src="clicking.wav" type="audio/wav">
 </audio>

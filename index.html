@@ -5,175 +5,215 @@
     <title>Печеньковый кликер</title>
     <style>
         * {
-            box-sizing: border-box;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b5 100%);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        /* Основной контент */
-        .screen {
-            flex: 1;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            min-height: 80vh;
-        }
-        
-        .screen.active {
-            display: flex;
-        }
-        
-        /* === ГЛАВНЫЙ ЭКРАН === */
-        #mainScreen {
-            justify-content: center;
-        }
-        
-        .cookie-image {
-            width: 80%;
-            max-width: 300px;
-            height: auto;
-            cursor: pointer;
-            transition: transform 0.05s linear;
-            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.2));
-        }
-        
-        .cookie-image:active {
-            transform: scale(0.97);
-        }
-        
-        /* === МАГАЗИН (два столбца) === */
-        .shop-container {
-            display: flex;
-            flex-direction: row;
-            width: 100%;
-            gap: 15px;
-            padding: 10px;
-            flex: 1;
-        }
-        
-        .shop-column {
-            flex: 1;
-            background: rgba(255,245,215,0.8);
-            border-radius: 30px;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            backdrop-filter: blur(5px);
-        }
-        
-        .shop-column h3 {
-            text-align: center;
-            color: #8b4513;
-            margin: 0 0 10px 0;
-            font-size: 20px;
-        }
-        
-        .upgrade-card {
-            background: #fff;
-            border-radius: 20px;
-            padding: 12px;
-            text-align: center;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
-        
-        .upgrade-card:active {
-            transform: scale(0.98);
-        }
-        
-        .upgrade-name {
-            font-weight: bold;
-            font-size: 18px;
-            color: #c47b3e;
-        }
-        
-        .upgrade-level {
-            font-size: 14px;
-            color: #666;
-            margin: 5px 0;
-        }
-        
-        .upgrade-cost {
-            background: #ffd966;
-            border-radius: 20px;
-            padding: 5px 10px;
-            display: inline-block;
-            font-weight: bold;
-            color: #8b4513;
-        }
-        
-        /* === РЕЙТИНГ (заглушка) === */
-        .coming-soon {
-            text-align: center;
-            background: rgba(255,255,255,0.8);
-            padding: 30px;
-            border-radius: 40px;
-            font-size: 24px;
-            color: #a0522d;
-        }
-        
-        /* === НАВБАР === */
-        .navbar {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            background: #c47b3e;
-            padding: 12px 20px;
-            border-radius: 30px 30px 0 0;
-            margin-top: 10px;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .nav-btn {
-            background: none;
-            border: none;
-            font-size: 24px;
-            color: white;
-            padding: 8px 20px;
-            border-radius: 30px;
-            cursor: pointer;
-            transition: 0.2s;
-            font-weight: bold;
-        }
-        
-        .nav-btn.active {
-            background: #ffd966;
-            color: #8b4513;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
-        
-        /* Счётчик на главном экране */
-        .score-display {
-            font-size: 48px;
-            font-weight: bold;
-            color: #8b4513;
-            background: rgba(255,255,200,0.9);
-            padding: 10px 25px;
-            border-radius: 60px;
-            margin-bottom: 30px;
-            text-align: center;
-        }
-        
-        /* Аудиоплееры (скрытые) */
-        audio {
-            display: none;
-        }
-    </style>
-</head>
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b5 100%);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+}
+
+/* Основной контент - растягивается на всю высоту */
+.screen {
+    flex: 1;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.screen.active {
+    display: flex;
+}
+
+/* === ГЛАВНЫЙ ЭКРАН === */
+#mainScreen {
+    justify-content: space-between;
+    padding-top: 20px;
+    padding-bottom: 20px;
+}
+
+.score-display {
+    font-size: 48px;
+    font-weight: bold;
+    color: #8b4513;
+    background: rgba(255,255,200,0.9);
+    padding: 10px 25px;
+    border-radius: 60px;
+    text-align: center;
+    margin-top: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.cookie-image {
+    width: 70%;
+    max-width: 280px;
+    height: auto;
+    cursor: pointer;
+    transition: transform 0.05s linear;
+    filter: drop-shadow(0 10px 15px rgba(0,0,0,0.2));
+    margin: 20px auto;
+    display: block;
+    flex-shrink: 0;
+}
+
+.cookie-image:active {
+    transform: scale(0.97);
+}
+
+/* Пустой блок для баланса на главном экране */
+.spacer {
+    height: 10px;
+}
+
+/* === МАГАЗИН (два столбца) === */
+.shop-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    gap: 15px;
+    padding: 10px;
+    flex: 1;
+    align-items: stretch;
+}
+
+.shop-column {
+    flex: 1;
+    background: rgba(255,245,215,0.8);
+    border-radius: 30px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    backdrop-filter: blur(5px);
+}
+
+.shop-column h3 {
+    text-align: center;
+    color: #8b4513;
+    margin: 0 0 10px 0;
+    font-size: 20px;
+}
+
+.upgrade-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 12px;
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+.upgrade-card:active {
+    transform: scale(0.98);
+}
+
+.upgrade-name {
+    font-weight: bold;
+    font-size: 18px;
+    color: #c47b3e;
+}
+
+.upgrade-level {
+    font-size: 14px;
+    color: #666;
+    margin: 5px 0;
+}
+
+.upgrade-cost {
+    background: #ffd966;
+    border-radius: 20px;
+    padding: 5px 10px;
+    display: inline-block;
+    font-weight: bold;
+    color: #8b4513;
+}
+
+/* === РЕЙТИНГ (заглушка) === */
+.coming-soon {
+    text-align: center;
+    background: rgba(255,255,255,0.8);
+    padding: 30px;
+    border-radius: 40px;
+    font-size: 24px;
+    color: #a0522d;
+}
+
+/* === НАВБАР === */
+.navbar {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background: #c47b3e;
+    padding: 10px 16px;
+    border-radius: 0;
+    margin-top: 0;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    flex-shrink: 0;
+}
+
+.nav-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: white;
+    padding: 10px 12px;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: 0.2s;
+    font-weight: bold;
+    flex: 1;
+    text-align: center;
+}
+
+.nav-btn.active {
+    background: #ffd966;
+    color: #8b4513;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Аудиоплееры (скрытые) */
+audio {
+    display: none;
+}
+
+/* Адаптация для совсем узких экранов */
+@media (max-width: 480px) {
+    .score-display {
+        font-size: 36px;
+        padding: 8px 20px;
+    }
+    .cookie-image {
+        width: 65%;
+    }
+    .nav-btn {
+        font-size: 16px;
+        padding: 8px;
+    }
+    .shop-column h3 {
+        font-size: 16px;
+    }
+    .upgrade-name {
+        font-size: 14px;
+    }
+}
+</style>
 <body>
 
 <!-- ГЛАВНЫЙ ЭКРАН -->

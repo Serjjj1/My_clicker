@@ -113,7 +113,7 @@
         }
         
         function clickCookie(event) {
-            vibrate(15);  // Очень короткая, едва заметная вибрация
+            vibrate(100);  // Очень короткая, едва заметная вибрация
             score += clickLevel;
             document.getElementById('score').innerText = score;
             save();
@@ -156,7 +156,7 @@
             let cost = 50;
             if (score >= cost) {
                 score -= cost;
-                vibrate(30);
+                vibrate(200);
                 clickLevel++;
                 document.getElementById('score').innerText = score;
                 document.getElementById('clickLevel').innerText = clickLevel;
@@ -168,7 +168,7 @@
             let cost = 100;
             if (score >= cost) {
                 score -= cost;
-                vibrate(30);
+                vibrate(200);
                 autoClickers++;
                 document.getElementById('score').innerText = score;
                 document.getElementById('autoCount').innerText = autoClickers;

@@ -113,7 +113,7 @@
         }
         
         function clickCookie(event) {
-            vibrate(50);  // Очень короткая, едва заметная вибрация
+            vibrate(100, 50, 100);
             score += clickLevel;
             document.getElementById('score').innerText = score;
             save();

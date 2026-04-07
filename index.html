@@ -1,190 +1,228 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Печеньковый кликер</title>
     <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
         body {
-            text-align: center;
+            margin: 0;
+            padding: 0;
             font-family: 'Segoe UI', Arial, sans-serif;
             background: linear-gradient(135deg, #fff3e0 0%, #ffe0b5 100%);
             min-height: 100vh;
-            margin: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Основной контент */
+        .screen {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             padding: 20px;
+            min-height: 80vh;
         }
-        h1 {
+        
+        .screen.active {
+            display: flex;
+        }
+        
+        /* === ГЛАВНЫЙ ЭКРАН === */
+        #mainScreen {
+            justify-content: center;
+        }
+        
+        .cookie-image {
+            width: 80%;
+            max-width: 300px;
+            height: auto;
+            cursor: pointer;
+            transition: transform 0.05s linear;
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.2));
+        }
+        
+        .cookie-image:active {
+            transform: scale(0.97);
+        }
+        
+        /* === МАГАЗИН (два столбца) === */
+        .shop-container {
+            display: flex;
+            flex-direction: row;
+            width: 100%;
+            gap: 15px;
+            padding: 10px;
+            flex: 1;
+        }
+        
+        .shop-column {
+            flex: 1;
+            background: rgba(255,245,215,0.8);
+            border-radius: 30px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .shop-column h3 {
+            text-align: center;
+            color: #8b4513;
+            margin: 0 0 10px 0;
+            font-size: 20px;
+        }
+        
+        .upgrade-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 12px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        
+        .upgrade-card:active {
+            transform: scale(0.98);
+        }
+        
+        .upgrade-name {
+            font-weight: bold;
+            font-size: 18px;
             color: #c47b3e;
-            text-shadow: 3px 3px 0 #ffd966;
-            font-size: 32px;
-            margin-top: 10px;
         }
-        #score {
-            font-size: 56px;
+        
+        .upgrade-level {
+            font-size: 14px;
+            color: #666;
+            margin: 5px 0;
+        }
+        
+        .upgrade-cost {
+            background: #ffd966;
+            border-radius: 20px;
+            padding: 5px 10px;
+            display: inline-block;
             font-weight: bold;
             color: #8b4513;
-            background: rgba(255,255,200,0.8);
-            display: inline-block;
-            padding: 10px 30px;
-            border-radius: 60px;
-            margin: 10px;
-            box-shadow: 0 5px 0 #d2b48c;
         }
-        .cookie {
-            font-size: 100px;
-            background: radial-gradient(circle at 30% 30%, #f5bc70, #d28b3a);
-            border: none;
-            border-radius: 120px;
-            padding: 25px 35px;
-            cursor: pointer;
-            transition: all 0.1s ease;
-            box-shadow: 0 10px 0 #8b4513;
-            margin: 15px;
+        
+        /* === РЕЙТИНГ (заглушка) === */
+        .coming-soon {
+            text-align: center;
+            background: rgba(255,255,255,0.8);
+            padding: 30px;
+            border-radius: 40px;
+            font-size: 24px;
+            color: #a0522d;
         }
-        .cookie:active {
-            transform: translateY(5px);
-            box-shadow: 0 5px 0 #8b4513;
-        }
-        button {
-            margin: 8px;
-            padding: 10px 20px;
-            font-size: 18px;
-            font-weight: bold;
+        
+        /* === НАВБАР === */
+        .navbar {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
             background: #c47b3e;
-            color: white;
+            padding: 12px 20px;
+            border-radius: 30px 30px 0 0;
+            margin-top: 10px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .nav-btn {
+            background: none;
             border: none;
+            font-size: 24px;
+            color: white;
+            padding: 8px 20px;
             border-radius: 30px;
             cursor: pointer;
             transition: 0.2s;
-            box-shadow: 0 3px 0 #6b2e00;
+            font-weight: bold;
         }
-        button:active {
-            transform: translateY(2px);
-            box-shadow: 0 1px 0 #6b2e00;
+        
+        .nav-btn.active {
+            background: #ffd966;
+            color: #8b4513;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
-        p {
-            font-size: 18px;
-            background: #fff0d4;
-            display: inline-block;
-            padding: 5px 15px;
-            border-radius: 30px;
-            color: #a0522d;
+        
+        /* Счётчик на главном экране */
+        .score-display {
+            font-size: 48px;
+            font-weight: bold;
+            color: #8b4513;
+            background: rgba(255,255,200,0.9);
+            padding: 10px 25px;
+            border-radius: 60px;
+            margin-bottom: 30px;
+            text-align: center;
         }
-        @keyframes shake {
-            0% { transform: rotate(0deg); }
-            25% { transform: rotate(10deg) scale(1.1); }
-            75% { transform: rotate(-5deg) scale(1.05); }
-            100% { transform: rotate(0deg); }
-        }
-        .cookie-click {
-            animation: shake 0.2s ease-in-out;
+        
+        /* Аудиоплееры (скрытые) */
+        audio {
+            display: none;
         }
     </style>
 </head>
 <body>
-    <h1>🍪 Печеньковый кликер</h1>
-    <div id="score">0</div>
-    <button class="cookie" onclick="clickCookie(event)">🍪</button>
-    <div>
-        <button onclick="buyUpgrade()">📈 Улучшить клик (+1 за клик) - Цена: 50</button>
-        <p>Уровень клика: <span id="clickLevel">1</span></p>
-        <button onclick="buyAuto()">🤖 Купить автокликер - Цена: 100</button>
-        <p>Автокликеров: <span id="autoCount">0</span></p>
+
+<!-- ГЛАВНЫЙ ЭКРАН -->
+<div id="mainScreen" class="screen active">
+    <div class="score-display" id="score">0</div>
+    <img src="cookie.png" alt="Печенька" class="cookie-image" id="cookieImg" onclick="clickCookie(event)">
+</div>
+
+<!-- ЭКРАН МАГАЗИНА -->
+<div id="shopScreen" class="screen">
+    <div class="shop-container">
+        <!-- Левый столбец: Улучшение клика -->
+        <div class="shop-column">
+            <h3>📈 Улучшение клика</h3>
+            <div class="upgrade-card" onclick="buyUpgrade()">
+                <div class="upgrade-name">Мощность клика</div>
+                <div class="upgrade-level">Уровень: <span id="clickLevel">1</span></div>
+                <div class="upgrade-cost">Цена: <span id="upgradeCost">50</span></div>
+            </div>
+        </div>
+        
+        <!-- Правый столбец: Автокликер -->
+        <div class="shop-column">
+            <h3>🤖 Автокликер</h3>
+            <div class="upgrade-card" onclick="buyAuto()">
+                <div class="upgrade-name">Робот-пекарь</div>
+                <div class="upgrade-level">Количество: <span id="autoCount">0</span></div>
+                <div class="upgrade-cost">Цена: <span id="autoCost">100</span></div>
+            </div>
+        </div>
     </div>
-    <script>
-        let soundIndex = 0;
-          // Функция безопасной вибрации
-        function vibrate(duration) {
-            if (navigator.vibrate) {
-                navigator.vibrate(duration);
-            }
-        }
-        let score = localStorage.score ? parseInt(localStorage.score) : 0;
-        let clickLevel = localStorage.clickLevel ? parseInt(localStorage.clickLevel) : 1;
-        let autoClickers = localStorage.autoClickers ? parseInt(localStorage.autoClickers) : 0;
-        
-        document.getElementById('score').innerText = score;
-        document.getElementById('clickLevel').innerText = clickLevel;
-        document.getElementById('autoCount').innerText = autoClickers;
-        
-        function save() {
-            localStorage.score = score;
-            localStorage.clickLevel = clickLevel;
-            localStorage.autoClickers = autoClickers;
-        }
-        
-        function clickCookie(event) {
-            vibrate(50);
-            score += clickLevel;
-            document.getElementById('score').innerText = score;
-            save();
-    
-    // === НОВАЯ СИСТЕМА ЗВУКА С НАЛОЖЕНИЕМ ===
-    let soundId = 'clickSound' + soundIndex;
-    let audioElement = document.getElementById(soundId);
-    
-    // Останавливаем текущий звук (если играет) и перематываем в начало
-    audioElement.pause();
-    audioElement.currentTime = 0;
-    // Запускаем заново
-    audioElement.play().catch(e => console.log("Звук заблокирован:", e));
-    
-    soundIndex = (soundIndex + 1) % 6;
-    // === КОНЕЦ НОВОЙ СИСТЕМЫ ===
-    
-    // Анимация печеньки
-    let cookieBtn = document.querySelector('.cookie');
-    cookieBtn.classList.add('cookie-click');
-    setTimeout(() => cookieBtn.classList.remove('cookie-click'), 200);
-    
-    // Всплывающий текст
-    let floatText = document.createElement('div');
-    floatText.innerText = '+'+clickLevel;
-    floatText.style.position = 'absolute';
-    floatText.style.left = (event.clientX - 20) + 'px';
-    floatText.style.top = (event.clientY - 30) + 'px';
-    floatText.style.fontSize = '28px';
-    floatText.style.fontWeight = 'bold';
-    floatText.style.color = '#ffaa33';
-    floatText.style.textShadow = '1px 1px 0 #8b4513';
-    floatText.style.pointerEvents = 'none';
-    floatText.style.zIndex = '1000';
-    document.body.appendChild(floatText);
-    setTimeout(() => floatText.remove(), 500);
-        }
-        
-        function buyUpgrade() {
-            let cost = 50;
-            if (score >= cost) {
-                score -= cost;
-                vibrate(100);
-                clickLevel++;
-                document.getElementById('score').innerText = score;
-                document.getElementById('clickLevel').innerText = clickLevel;
-                save();
-            } else alert("Не хватает печенек!");
-        }
-        
-        function buyAuto() {
-            let cost = 100;
-            if (score >= cost) {
-                score -= cost;
-                vibrate(100);
-                autoClickers++;
-                document.getElementById('score').innerText = score;
-                document.getElementById('autoCount').innerText = autoClickers;
-                save();
-            } else alert("Не хватает печенек!");
-        }
-        
-        setInterval(() => {
-            if (autoClickers > 0) {
-                score += autoClickers;
-                document.getElementById('score').innerText = score;
-                save();
-            }
-        }, 3000);
-    </script>
-<!-- Пул аудиоплееров с принудительной перезагрузкой -->
+</div>
+
+<!-- ЭКРАН РЕЙТИНГА -->
+<div id="ratingScreen" class="screen">
+    <div class="coming-soon">
+        🏆 Рейтинг<br>
+        <span style="font-size: 16px;">Находится в разработке</span>
+    </div>
+</div>
+
+<!-- НАВБАР -->
+<div class="navbar">
+    <button class="nav-btn" data-screen="main">🏠 Главная</button>
+    <button class="nav-btn" data-screen="shop">🛒 Магазин</button>
+    <button class="nav-btn" data-screen="rating">🏆 Рейтинг</button>
+</div>
+
+<!-- Аудиоплееры -->
 <audio id="clickSound0" preload="auto">
     <source src="clicking.wav" type="audio/wav">
 </audio>
@@ -200,20 +238,140 @@
 <audio id="clickSound4" preload="auto">
     <source src="clicking.wav" type="audio/wav">
 </audio>
-<audio id="clickSound5" preload="auto">
-    <source src="clicking.wav" type="audio/wav">
-</audio>
-<audio id="clickSound6" preload="auto">
-    <source src="clicking.wav" type="audio/wav">
-</audio>
-<audio id="clickSound7" preload="auto">
-    <source src="clicking.wav" type="audio/wav">
-</audio>
-<audio id="clickSound8" preload="auto">
-    <source src="clicking.wav" type="audio/wav">
-</audio>
-<audio id="clickSound9" preload="auto">
-    <source src="clicking.wav" type="audio/wav">
-</audio>
+
+<script>
+    // === ИГРОВЫЕ ПЕРЕМЕННЫЕ ===
+    let score = localStorage.score ? parseInt(localStorage.score) : 0;
+    let clickLevel = localStorage.clickLevel ? parseInt(localStorage.clickLevel) : 1;
+    let autoClickers = localStorage.autoClickers ? parseInt(localStorage.autoClickers) : 0;
+    
+    // Звуковой индекс
+    let soundIndex = 0;
+    
+    // === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
+    function save() {
+        localStorage.score = score;
+        localStorage.clickLevel = clickLevel;
+        localStorage.autoClickers = autoClickers;
+        updateUI();
+    }
+    
+    function updateUI() {
+        document.getElementById('score').innerText = score;
+        document.getElementById('clickLevel').innerText = clickLevel;
+        document.getElementById('autoCount').innerText = autoClickers;
+        document.getElementById('upgradeCost').innerText = Math.floor(50 + clickLevel * 1.5);
+        document.getElementById('autoCost').innerText = Math.floor(100 + autoClickers * 1.8);
+    }
+    
+    function vibrate(duration) {
+        if (navigator.vibrate) {
+            navigator.vibrate(duration);
+        }
+    }
+    
+    function playClickSound() {
+        let soundId = 'clickSound' + soundIndex;
+        let audioElement = document.getElementById(soundId);
+        audioElement.pause();
+        audioElement.currentTime = 0;
+        audioElement.play().catch(e => console.log("Звук заблокирован"));
+        soundIndex = (soundIndex + 1) % 5;
+    }
+    
+    // === ИГРОВЫЕ ФУНКЦИИ ===
+    function clickCookie(event) {
+        vibrate(50);
+        playClickSound();
+        
+        score += clickLevel;
+        save();
+        
+        // Анимация нажатия
+        let cookieImg = document.getElementById('cookieImg');
+        cookieImg.style.transform = 'scale(0.97)';
+        setTimeout(() => cookieImg.style.transform = '', 80);
+        
+        // Всплывающий текст
+        let floatText = document.createElement('div');
+        floatText.innerText = '+'+clickLevel;
+        floatText.style.position = 'absolute';
+        let clickX = event.touches ? event.touches[0].clientX : event.clientX;
+        let clickY = event.touches ? event.touches[0].clientY : event.clientY;
+        floatText.style.left = (clickX - 20) + 'px';
+        floatText.style.top = (clickY - 30) + 'px';
+        floatText.style.fontSize = '28px';
+        floatText.style.fontWeight = 'bold';
+        floatText.style.color = '#ffaa33';
+        floatText.style.textShadow = '1px 1px 0 #8b4513';
+        floatText.style.pointerEvents = 'none';
+        floatText.style.zIndex = '1000';
+        floatText.style.position = 'fixed';
+        document.body.appendChild(floatText);
+        setTimeout(() => floatText.remove(), 500);
+    }
+    
+    function buyUpgrade() {
+        let cost = Math.floor(50 + clickLevel * 1.5);
+        if (score >= cost) {
+            score -= cost;
+            clickLevel++;
+            vibrate(100);
+            playClickSound();
+            save();
+        } else {
+            vibrate(100);
+        }
+    }
+    
+    function buyAuto() {
+        let cost = Math.floor(100 + autoClickers * 1.8);
+        if (score >= cost) {
+            score -= cost;
+            autoClickers++;
+            vibrate(100);
+            playClickSound();
+            save();
+        } else {
+            vibrate(100);
+        }
+    }
+    
+    // === НАВИГАЦИЯ ===
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(screen => {
+            screen.classList.remove('active');
+        });
+        document.getElementById(screenId + 'Screen').classList.add('active');
+        
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.getAttribute('data-screen') === screenId) {
+                btn.classList.add('active');
+            }
+        });
+    }
+    
+    // === АВТОКЛИКЕР ===
+    setInterval(() => {
+        if (autoClickers > 0) {
+            score += autoClickers;
+            save();
+        }
+    }, 3000);
+    
+    // === ЗАПУСК И НАСТРОЙКА ===
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            let screen = btn.getAttribute('data-screen');
+            showScreen(screen);
+        });
+    });
+    
+    updateUI();
+    
+    // Пробуждение звука первым касанием
+    document.body.addEventListener('touchstart', function() {}, { once: true });
+</script>
 </body>
-</html>
+    </html>

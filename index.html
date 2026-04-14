@@ -240,6 +240,16 @@ html {
 body::before {
     display: none;
 }
+/* Запрещаем всем внутренним блокам перекрывать фон */
+body, .screen, .navbar, .navbar::before, .navbar::after {
+    background: transparent !important;
+}
+
+/* Навбар — только размытие, без своего фона */
+.navbar {
+    background: transparent !important;
+    backdrop-filter: blur(20px);
+}
 </style>
 <body>
 

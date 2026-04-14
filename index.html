@@ -226,6 +226,17 @@ html {
 body::before {
     display: none;
 }
+/* Убираем все возможные фоны, кроме основного */
+html, body, .screen, .navbar, .navbar::before, .navbar::after {
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b5 100%);
+}
+
+/* Навбар поверх основного фона с размытием */
+.navbar {
+    background: rgba(196, 123, 62, 0.3) !important;
+    backdrop-filter: blur(20px) !important;
+    border-radius: 0 !important;
+}
 </style>
 <body>
 

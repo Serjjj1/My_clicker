@@ -316,12 +316,23 @@
     }
     
     function recalcStats() {
-        currentPower = 1 + powerLevels.reduce((sum, lvl, idx) => sum + (lvl * powerUpgrades[idx].basePower * Math.pow(powerUpgrades[idx].multiplier, lvl)), 0);
-        currentIncome = miningLevels.reduce((sum, lvl, idx) => sum + (lvl * miningUpgrades[idx].baseIncome * Math.pow(miningUpgrades[idx].multiplier, lvl)), 0);
-        maxEnergy = 500 + (energyLevels[1] * energyUpgrades[1].baseMax * Math.pow(energyUpgrades[1].multiplier, energyLevels[1]));
-        energyRegen = 5 + (energyLevels[0] * energyUpgrades[0].baseRegen * Math.pow(energyUpgrades[0].multiplier, energyLevels[0]));
-        if (currentEnergy > maxEnergy) currentEnergy = maxEnergy;
-    }
+    // Расчёт мощности клика (линейно, без множителя)
+    let powerBonus = powerLevels.reduce((sum, lvl, idx) => {
+        return sum + (lvl * powerUpgrades[idx].basePower);
+    }, 0);
+    currentPower = 0.001 + powerBonus;
+    
+    // Расчёт пассивного дохода (линейно, без множителя)
+    let incomeBonus = miningLevels.reduce((sum, lvl, idx) => {
+        return sum + (lvl * miningUpgrades[idx].baseIncome);
+    }, 0);
+    currentIncome = incomeBonus;
+    
+    // Расчёт энергии (линейно, без множителя)
+    maxEnergy = 500 + (energyLevels[1] * energyUpgrades[1].baseMax);
+    energyRegen = 5 + (energyLevels[0] * energyUpgrades[0].baseRegen);
+    if (currentEnergy > maxEnergy) currentEnergy = maxEnergy;
+    } 
     
     function updateUI() {
         document.getElementById('score').innerText = score.toFixed(4);

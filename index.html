@@ -69,9 +69,9 @@ body {
 }
 
 .cookie-image {
-    width: 130%;
-    max-width: none;
+    width: auto;
     height: auto;
+    max-width: 100%;
     cursor: pointer;
     transition: transform 0.05s linear;
     filter: drop-shadow(0 15px 25px rgba(0,0,0,0.3));
@@ -79,9 +79,7 @@ body {
     display: block;
     flex-shrink: 0;
     position: relative;
-    bottom: -20px;  /* Опускаем печеньку вниз, чтобы её низ ушёл за навбар */
-    left: 50%;
-    transform: translateX(-50%);
+    bottom: -15px;
 }
 
 .cookie-image:active {
@@ -245,15 +243,21 @@ html {
 body::before {
     display: none;
 }
-/* Запрещаем всем внутренним блокам перекрывать фон */
-/*body, .screen, .navbar, .navbar::before, .navbar::after {
-    background: transparent !important;
-        }*/
 
 /* Навбар — только размытие, без своего фона */
 .navbar {
     background: transparent;
     backdrop-filter: blur(20px);
+}
+/* Запрещаем растягивание экрана и свайп */
+body {
+    overflow-x: hidden;
+    touch-action: pan-y;  /* запрещаем горизонтальный свайп, но вертикальный оставляем */
+}
+
+#mainScreen {
+    overflow-x: hidden;
+    width: 100%;
 }
 </style>
 <body>

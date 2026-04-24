@@ -296,7 +296,7 @@
     let miningLevels = localStorage.miningLevels ? JSON.parse(localStorage.miningLevels) : [0,0,0,0,0];
     let energyLevels = localStorage.energyLevels ? JSON.parse(localStorage.energyLevels) : [0,0];
     
-    let currentPower = 1 + powerLevels.reduce((sum, lvl, idx) => sum + (lvl * powerUpgrades[idx].basePower * Math.pow(powerUpgrades[idx].multiplier, lvl)), 0);
+    let currentPower = 0.001 + powerLevels.reduce((sum, lvl, idx) => sum + (lvl * powerUpgrades[idx].basePower * Math.pow(powerUpgrades[idx].multiplier, lvl)), 0);
     let currentIncome = miningLevels.reduce((sum, lvl, idx) => sum + (lvl * miningUpgrades[idx].baseIncome * Math.pow(miningUpgrades[idx].multiplier, lvl)), 0);
     
     let maxEnergy = 500 + (energyLevels[1] * energyUpgrades[1].baseMax * Math.pow(energyUpgrades[1].multiplier, energyLevels[1]));
@@ -324,7 +324,7 @@
     }
     
     function updateUI() {
-        document.getElementById('score').innerText = score.toFixed(2);
+        document.getElementById('score').innerText = score.toFixed(4);
         let percent = (currentEnergy / maxEnergy) * 100;
         document.getElementById('energyFill').style.width = Math.min(100, percent) + '%';
         document.getElementById('energyText').innerText = Math.floor(currentEnergy) + ' / ' + Math.floor(maxEnergy);

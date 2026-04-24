@@ -69,8 +69,8 @@ body {
 }
 
 .cookie-image {
-    width: 100%;
-    max-width: 100%;
+    width: 95%;
+    max-width: 450px;
     height: auto;
     cursor: pointer;
     transition: transform 0.05s linear;
@@ -78,9 +78,6 @@ body {
     margin: 0 auto;
     display: block;
     flex-shrink: 0;
-    position: relative;
-    bottom: -30px;
-    transform: scale(2);  /* увеличиваем без расширения экрана */
 }
 
 .cookie-image:active {
@@ -249,16 +246,6 @@ body::before {
 .navbar {
     background: transparent;
     backdrop-filter: blur(20px);
-}
-/* Запрещаем растягивание экрана и свайп */
-body {
-    overflow-x: hidden;
-    touch-action: pan-y;  /* запрещаем горизонтальный свайп, но вертикальный оставляем */
-}
-
-#mainScreen {
-    overflow-x: hidden;
-    width: 100%;
 }
 </style>
 <body>

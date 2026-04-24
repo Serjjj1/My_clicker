@@ -246,13 +246,55 @@ body::before {
     background: transparent;
     backdrop-filter: blur(20px);
 }
+
+/* === ШКАЛА ЭНЕРГИИ === */
+.energy-bar-container {
+    width: 85%;
+    max-width: 350px;
+    height: 30px;
+    background-color: rgba(60, 60, 80, 0.7);
+    border-radius: 30px;
+    margin: 25px auto 15px auto;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 215, 0, 0.5);
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
+
+.energy-bar-fill {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, #ffd966, #ffaa33);
+    border-radius: 30px;
+    transition: width 0.2s ease-out;
+    box-shadow: inset 0 1px 3px rgba(255,255,200,0.6);
+}
+
+.energy-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 1px 1px 0 #333;
+    letter-spacing: 1px;
+}
 </style>
 <body>
 
 <!-- ГЛАВНЫЙ ЭКРАН -->
 <div id="mainScreen" class="screen active">
     <div class="score-display" id="score">0</div>
-    <img src="cookie.png" alt="Печенька" class="cookie-image" id="cookieImg" onclick="clickCookie(event)">
+    <img src="cookie.png" alt="Процессор" class="cookie-image" id="cookieImg" onclick="clickCookie(event)">
+    
+    <!-- Шкала силы / энергии -->
+    <div class="energy-bar-container">
+        <div class="energy-bar-fill" id="energyFill"></div>
+        <div class="energy-text" id="energyText">0 / 500</div>
+    </div>
 </div>
 
 <!-- ЭКРАН МАГАЗИНА -->
@@ -317,6 +359,8 @@ body::before {
     let score = localStorage.score ? parseInt(localStorage.score) : 0;
     let clickLevel = localStorage.clickLevel ? parseInt(localStorage.clickLevel) : 1;
     let autoClickers = localStorage.autoClickers ? parseInt(localStorage.autoClickers) : 0;
+    let maxEnergy = 500;        // Максимум энергии
+    let currentEnergy = 500;    // Текущая энергия
     
     // Звуковой индекс
     let soundIndex = 0;
@@ -330,11 +374,21 @@ body::before {
     }
     
     function updateUI() {
-        document.getElementById('score').innerText = score;
-        document.getElementById('clickLevel').innerText = clickLevel;
-        document.getElementById('autoCount').innerText = autoClickers;
-        document.getElementById('upgradeCost').innerText = Math.floor(50 + clickLevel * 1.5);
-        document.getElementById('autoCost').innerText = Math.floor(100 + autoClickers * 1.8);
+    document.getElementById('score').innerText = score;
+    document.getElementById('clickLevel').innerText = clickLevel;
+    document.getElementById('autoCount').innerText = autoClickers;
+    document.getElementById('upgradeCost').innerText = Math.floor(50 + clickLevel * 1.5);
+    document.getElementById('autoCost').innerText = Math.floor(100 + autoClickers * 1.8);
+    
+    // Обновляем шкалу энергии
+    let energyPercent = (currentEnergy / maxEnergy) * 100;
+    let energyFill = document.getElementById('energyFill');
+    if (energyFill) {
+        energyFill.style.width = energyPercent + '%';
+    }
+    let energyText = document.getElementById('energyText');
+    if (energyText) {
+        energyText.innerText = Math.floor(currentEnergy) + ' / ' + maxEnergy;
     }
     
     function vibrate(duration) {
@@ -354,15 +408,24 @@ body::before {
     
     // === ИГРОВЫЕ ФУНКЦИИ ===
     function clickCookie(event) {
-        vibrate(50);
-        playClickSound();
-        
-        score += clickLevel;
-        save();
+    // Проверяем, есть ли энергия
+    if (currentEnergy < 1) {
+        vibrate(50);  // короткая вибрация для ошибки
+        return;       // выходим из функции, клик не засчитывается
+    }
+    
+    // Тратим энергию
+    currentEnergy -= 1;
+    vibrate(50);
+    playClickSound();
+    score += clickLevel;
+    save();
+    updateUI();  // обновляем шкалу после клика
         
         // Анимация нажатия
         let cookieImg = document.getElementById('cookieImg');
         cookieImg.style.transform = 'scale(0.97)';
+        
         setTimeout(() => cookieImg.style.transform = '', 80);
         
         // Всплывающий текст
@@ -445,6 +508,14 @@ body::before {
     
     // Пробуждение звука первым касанием
     document.body.addEventListener('touchstart', function() {}, { once: true });
+
+    // === ВОССТАНОВЛЕНИЕ ЭНЕРГИИ ===
+setInterval(() => {
+    if (currentEnergy < maxEnergy) {
+        currentEnergy = Math.min(currentEnergy + 10, maxEnergy);  // +10 в секунду
+        updateUI();
+    }
+}, 1000);
 </script>
 </body>
     </html>

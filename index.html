@@ -353,14 +353,16 @@ body::before {
 <audio id="clickSound4" preload="auto">
     <source src="clicking.wav" type="audio/wav">
 </audio>
-
+    
 <script>
     // === ИГРОВЫЕ ПЕРЕМЕННЫЕ ===
     let score = localStorage.score ? parseInt(localStorage.score) : 0;
     let clickLevel = localStorage.clickLevel ? parseInt(localStorage.clickLevel) : 1;
     let autoClickers = localStorage.autoClickers ? parseInt(localStorage.autoClickers) : 0;
-    let maxEnergy = 500;        // Максимум энергии
-    let currentEnergy = 500;    // Текущая энергия
+    
+    // Переменные энергии
+    let maxEnergy = 500;
+    let currentEnergy = localStorage.currentEnergy ? parseInt(localStorage.currentEnergy) : 500;
     
     // Звуковой индекс
     let soundIndex = 0;
@@ -370,36 +372,34 @@ body::before {
         localStorage.score = score;
         localStorage.clickLevel = clickLevel;
         localStorage.autoClickers = autoClickers;
+        localStorage.currentEnergy = currentEnergy;
         updateUI();
     }
     
     function updateUI() {
-    document.getElementById('score').innerText = score;
-    document.getElementById('clickLevel').innerText = clickLevel;
-    document.getElementById('autoCount').innerText = autoClickers;
-    document.getElementById('upgradeCost').innerText = Math.floor(50 + clickLevel * 1.5);
-    document.getElementById('autoCost').innerText = Math.floor(100 + autoClickers * 1.8);
-    
-    // Обновляем шкалу энергии
-    let energyPercent = (currentEnergy / maxEnergy) * 100;
-    let energyFill = document.getElementById('energyFill');
-    if (energyFill) {
-        energyFill.style.width = energyPercent + '%';
-    }
-    let energyText = document.getElementById('energyText');
-    if (energyText) {
-        energyText.innerText = Math.floor(currentEnergy) + ' / ' + maxEnergy;
+        document.getElementById('score').innerText = score;
+        document.getElementById('clickLevel').innerText = clickLevel;
+        document.getElementById('autoCount').innerText = autoClickers;
+        document.getElementById('upgradeCost').innerText = Math.floor(50 + clickLevel * 1.5);
+        document.getElementById('autoCost').innerText = Math.floor(100 + autoClickers * 1.8);
+        
+        // Обновляем шкалу энергии
+        let energyPercent = (currentEnergy / maxEnergy) * 100;
+        let energyFill = document.getElementById('energyFill');
+        if (energyFill) energyFill.style.width = energyPercent + '%';
+        
+        let energyText = document.getElementById('energyText');
+        if (energyText) energyText.innerText = Math.floor(currentEnergy) + ' / ' + maxEnergy;
     }
     
     function vibrate(duration) {
-        if (navigator.vibrate) {
-            navigator.vibrate(duration);
-        }
+        if (navigator.vibrate) navigator.vibrate(duration);
     }
     
     function playClickSound() {
         let soundId = 'clickSound' + soundIndex;
         let audioElement = document.getElementById(soundId);
+        if (!audioElement) return;
         audioElement.pause();
         audioElement.currentTime = 0;
         audioElement.play().catch(e => console.log("Звук заблокирован"));
@@ -408,32 +408,34 @@ body::before {
     
     // === ИГРОВЫЕ ФУНКЦИИ ===
     function clickCookie(event) {
-    // Проверяем, есть ли энергия
-    if (currentEnergy < 1) {
-        vibrate(50);  // короткая вибрация для ошибки
-        return;       // выходим из функции, клик не засчитывается
-    }
-    
-    // Тратим энергию
-    currentEnergy -= 1;
-    vibrate(50);
-    playClickSound();
-    score += clickLevel;
-    save();
-    updateUI();  // обновляем шкалу после клика
+        // Проверка энергии
+        if (currentEnergy < 1) {
+            vibrate(50);
+            return;
+        }
+        
+        // Тратим энергию
+        currentEnergy -= 1;
+        
+        vibrate(50);
+        playClickSound();
+        
+        score += clickLevel;
+        save();
         
         // Анимация нажатия
         let cookieImg = document.getElementById('cookieImg');
-        cookieImg.style.transform = 'scale(0.97)';
-        
-        setTimeout(() => cookieImg.style.transform = '', 80);
+        if (cookieImg) {
+            cookieImg.style.transform = 'scale(0.97)';
+            setTimeout(() => cookieImg.style.transform = '', 80);
+        }
         
         // Всплывающий текст
         let floatText = document.createElement('div');
         floatText.innerText = '+'+clickLevel;
-        floatText.style.position = 'absolute';
         let clickX = event.touches ? event.touches[0].clientX : event.clientX;
         let clickY = event.touches ? event.touches[0].clientY : event.clientY;
+        floatText.style.position = 'fixed';
         floatText.style.left = (clickX - 20) + 'px';
         floatText.style.top = (clickY - 30) + 'px';
         floatText.style.fontSize = '28px';
@@ -442,7 +444,6 @@ body::before {
         floatText.style.textShadow = '1px 1px 0 #8b4513';
         floatText.style.pointerEvents = 'none';
         floatText.style.zIndex = '1000';
-        floatText.style.position = 'fixed';
         document.body.appendChild(floatText);
         setTimeout(() => floatText.remove(), 500);
     }
@@ -478,7 +479,8 @@ body::before {
         document.querySelectorAll('.screen').forEach(screen => {
             screen.classList.remove('active');
         });
-        document.getElementById(screenId + 'Screen').classList.add('active');
+        let targetScreen = document.getElementById(screenId + 'Screen');
+        if (targetScreen) targetScreen.classList.add('active');
         
         document.querySelectorAll('.nav-btn').forEach(btn => {
             btn.classList.remove('active');
@@ -496,6 +498,14 @@ body::before {
         }
     }, 3000);
     
+    // === ВОССТАНОВЛЕНИЕ ЭНЕРГИИ ===
+    setInterval(() => {
+        if (currentEnergy < maxEnergy) {
+            currentEnergy = Math.min(currentEnergy + 10, maxEnergy);
+            save();
+        }
+    }, 1000);
+    
     // === ЗАПУСК И НАСТРОЙКА ===
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -508,14 +518,6 @@ body::before {
     
     // Пробуждение звука первым касанием
     document.body.addEventListener('touchstart', function() {}, { once: true });
-
-    // === ВОССТАНОВЛЕНИЕ ЭНЕРГИИ ===
-setInterval(() => {
-    if (currentEnergy < maxEnergy) {
-        currentEnergy = Math.min(currentEnergy + 10, maxEnergy);  // +10 в секунду
-        updateUI();
-    }
-}, 1000);
 </script>
 </body>
     </html>

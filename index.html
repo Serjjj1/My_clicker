@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Майнинг кликер</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: url('bg.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .screen {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 20px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* === ГЛАВНЫЙ ЭКРАН === */
+        #mainScreen {
+            justify-content: center;
+        }
+
+        .score-display {
+            font-size: 48px;
+            font-weight: 900;
+            color: #ffeedd;
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 0 #5c2e0e, 4px 4px 0 rgba(0,0,0,0.3), 0 0 15px rgba(255,215,0,0.5);
+            background: transparent;
+            padding: 10px 20px;
+        }
+
+        .cookie-image {
+            width: 75%;
+            max-width: 300px;
+            cursor: pointer;
+            transition: transform 0.05s linear;
+            filter: drop-shadow(0 15px 25px rgba(0,0,0,0.3));
+            display: block;
+        }
+
+        .cookie-image:active {
+            transform: scale(0.97);
+        }
+
+        /* === ШКАЛА ЭНЕРГИИ === */
+        .energy-bar-container {
+            width: 85%;
+            max-width: 350px;
+            height: 30px;
+            background-color: rgba(60, 60, 80, 0.7);
+            border-radius: 30px;
+            margin: 20px auto 10px auto;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 215, 0, 0.5);
+        }
+
+        .energy-bar-fill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #ffd966, #ffaa33);
+            border-radius: 30px;
+            transition: width 0.2s ease-out;
+        }
+
+        .energy-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 0 #333;
+        }
+
+        /* === МАГАЗИН (три вкладки) === */
+        .shop-tabs {
+            display: flex;
+            width: 100%;
+            gap: 8px;
+            margin-bottom: 15px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 40px;
+            padding: 5px;
+        }
+
+        .shop-tab {
+            flex: 1;
+            text-align: center;
+            padding: 8px 0;
+            background: rgba(255,245,215,0.5);
+            border-radius: 35px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .shop-tab.active {
+            background: rgba(255, 200, 50, 0.85);
+            color: #5c2e0e;
+            box-shadow: 0 0 10px gold;
+        }
+
+        .upgrades-list {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .upgrade-item {
+            background: rgba(30,30,40,0.85);
+            backdrop-filter: blur(8px);
+            border-radius: 20px;
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 5px solid #ffd966;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+
+        .upgrade-item:active {
+            transform: scale(0.98);
+        }
+
+        .upgrade-info {
+            flex: 2;
+        }
+
+        .upgrade-name {
+            font-weight: bold;
+            color: #ffd966;
+            font-size: 16px;
+        }
+
+        .upgrade-desc {
+            font-size: 12px;
+            color: #ccc;
+        }
+
+        .upgrade-stats {
+            flex: 1;
+            text-align: right;
+        }
+
+        .upgrade-price {
+            background: #ffaa33;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            color: #2c1a0e;
+            font-size: 14px;
+        }
+
+        .upgrade-level {
+            font-size: 11px;
+            color: #ffd966;
+        }
+
+        /* === НАВБАР === */
+        .navbar {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background: rgba(255, 200, 50, 0.85);
+            backdrop-filter: blur(20px);
+            padding: 12px 20px;
+            border-radius: 35px 35px 0 0;
+            flex-shrink: 0;
+            border-top: 2px solid rgba(255, 230, 100, 0.9);
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: bold;
+            flex: 1;
+            text-align: center;
+        }
+
+        .nav-btn.active {
+            background: #ffd966;
+            color: #8b4513;
+        }
+
+        audio { display: none; }
+    </style>
+</head>
+<body>
+
+<!-- ГЛАВНЫЙ ЭКРАН -->
+<div id="mainScreen" class="screen active">
+    <div class="score-display" id="score">0</div>
+    <img src="chip.png" alt="Процессор" class="cookie-image" id="cookieImg" onclick="clickChip(event)">
+    <div class="energy-bar-container">
+        <div class="energy-bar-fill" id="energyFill"></div>
+        <div class="energy-text" id="energyText">0 / 500</div>
+    </div>
+</div>
+
+<!-- ЭКРАН МАГАЗИНА -->
+<div id="shopScreen" class="screen">
+    <div class="shop-tabs">
+        <div class="shop-tab" data-tab="power">💪 Мощность</div>
+        <div class="shop-tab" data-tab="mining">⛏️ Майнинг</div>
+        <div class="shop-tab" data-tab="energy">⚡ Выносливость</div>
+    </div>
+    <div id="powerUpgrades" class="upgrades-list"></div>
+    <div id="miningUpgrades" class="upgrades-list" style="display:none;"></div>
+    <div id="energyUpgrades" class="upgrades-list" style="display:none;"></div>
+</div>
+
+<!-- ЭКРАН РЕЙТИНГА -->
+<div id="ratingScreen" class="screen">
+    <div class="coming-soon" style="text-align:center; background:rgba(0,0,0,0.6); padding:30px; border-radius:40px; color:white;">🏆 Рейтинг<br><span style="font-size:16px;">В разработке</span></div>
+</div>
+
+<!-- НАВБАР -->
+<div class="navbar">
+    <button class="nav-btn" data-screen="main">🏠 Главная</button>
+    <button class="nav-btn" data-screen="shop">🛒 Магазин</button>
+    <button class="nav-btn" data-screen="rating">🏆 Рейтинг</button>
+</div>
+
+<audio id="clickSound0" preload="auto"><source src="clicking.wav" type="audio/wav"></audio>
+<audio id="clickSound1" preload="auto"><source src="clicking.wav" type="audio/wav"></audio>
+<audio id="clickSound2" preload="auto"><source src="clicking.wav" type="audio/wav"></audio>
+<audio id="clickSound3" preload="auto"><source src="clicking.wav" type="audio/wav"></audio>
+<audio id="clickSound4" preload="auto"><source src="clicking.wav" type="audio/wav"></audio>
+
+<script>
+    // === ДАННЫЕ УЛУЧШЕНИЙ ===
+    const powerUpgrades = [
+        { baseCost: 0.5, basePower: 0.001, multiplier: 1.4, name: "Младший транзистор", desc: "+0.001 силы" },
+        { baseCost: 2, basePower: 0.005, multiplier: 1.4, name: "Логический элемент", desc: "+0.005 силы" },
+        { baseCost: 10, basePower: 0.3, multiplier: 1.5, name: "Интегральная схема", desc: "+0.3 силы" },
+        { baseCost: 25, basePower: 0.8, multiplier: 1.5, name: "Тактовый генератор", desc: "+0.8 силы" },
+        { baseCost: 100, basePower: 3.5, multiplier: 1.6, name: "Кремниевая пластина", desc: "+3.5 силы" }
+    ];
+    
+    const miningUpgrades = [
+        { baseCost: 1, baseIncome: 0.001, multiplier: 1.5, name: "Ферма из GPU", desc: "+0.001/сек" },
+        { baseCost: 17, baseIncome: 0.02, multiplier: 1.5, name: "ASIC-майнер", desc: "+0.02/сек" },
+        { baseCost: 50, baseIncome: 0.06, multiplier: 1.6, name: "Майнинг-пул", desc: "+0.06/сек" },
+        { baseCost: 120, baseIncome: 0.15, multiplier: 1.7, name: "ЦОД", desc: "+0.15/сек" },
+        { baseCost: 250, baseIncome: 0.35, multiplier: 1.7, name: "Квантовый чип", desc: "+0.35/сек" }
+    ];
+    
+    const energyUpgrades = [
+        { baseCost: 10, baseRegen: 1, multiplier: 3, name: "Турбо-кулер", desc: "+1 реген/сек", type: "regen" },
+        { baseCost: 20, baseMax: 500, multiplier: 3, name: "ИБП", desc: "+500 к макс. энергии", type: "max" }
+    ];
+
+    // === ПЕРЕМЕННЫЕ ===
+    let score = localStorage.score ? parseFloat(localStorage.score) : 0;
+    let powerLevels = localStorage.powerLevels ? JSON.parse(localStorage.powerLevels) : [0,0,0,0,0];
+    let miningLevels = localStorage.miningLevels ? JSON.parse(localStorage.miningLevels) : [0,0,0,0,0];
+    let energyLevels = localStorage.energyLevels ? JSON.parse(localStorage.energyLevels) : [0,0];
+    
+    let currentPower = 1 + powerLevels.reduce((sum, lvl, idx) => sum + (lvl * powerUpgrades[idx].basePower * Math.pow(powerUpgrades[idx].multiplier, lvl)), 0);
+    let currentIncome = miningLevels.reduce((sum, lvl, idx) => sum + (lvl * miningUpgrades[idx].baseIncome * Math.pow(miningUpgrades[idx].multiplier, lvl)), 0);
+    
+    let maxEnergy = 500 + (energyLevels[1] * energyUpgrades[1].baseMax * Math.pow(energyUpgrades[1].multiplier, energyLevels[1]));
+    let currentEnergy = localStorage.currentEnergy ? parseFloat(localStorage.currentEnergy) : maxEnergy;
+    let energyRegen = 5 + (energyLevels[0] * energyUpgrades[0].baseRegen * Math.pow(energyUpgrades[0].multiplier, energyLevels[0]));
+    
+    let soundIndex = 0;
+    
+    // === ФУНКЦИИ ===
+    function save() {
+        localStorage.score = score;
+        localStorage.powerLevels = JSON.stringify(powerLevels);
+        localStorage.miningLevels = JSON.stringify(miningLevels);
+        localStorage.energyLevels = JSON.stringify(energyLevels);
+        localStorage.currentEnergy = currentEnergy;
+        updateAll();
+    }
+    
+    function recalcStats() {
+        currentPower = 1 + powerLevels.reduce((sum, lvl, idx) => sum + (lvl * powerUpgrades[idx].basePower * Math.pow(powerUpgrades[idx].multiplier, lvl)), 0);
+        currentIncome = miningLevels.reduce((sum, lvl, idx) => sum + (lvl * miningUpgrades[idx].baseIncome * Math.pow(miningUpgrades[idx].multiplier, lvl)), 0);
+        maxEnergy = 500 + (energyLevels[1] * energyUpgrades[1].baseMax * Math.pow(energyUpgrades[1].multiplier, energyLevels[1]));
+        energyRegen = 5 + (energyLevels[0] * energyUpgrades[0].baseRegen * Math.pow(energyUpgrades[0].multiplier, energyLevels[0]));
+        if (currentEnergy > maxEnergy) currentEnergy = maxEnergy;
+    }
+    
+    function updateUI() {
+        document.getElementById('score').innerText = score.toFixed(2);
+        let percent = (currentEnergy / maxEnergy) * 100;
+        document.getElementById('energyFill').style.width = Math.min(100, percent) + '%';
+        document.getElementById('energyText').innerText = Math.floor(currentEnergy) + ' / ' + Math.floor(maxEnergy);
+    }
+    
+    function renderShop() {
+        const powerContainer = document.getElementById('powerUpgrades');
+        powerContainer.innerHTML = '';
+        powerUpgrades.forEach((up, idx) => {
+            let lvl = powerLevels[idx];
+            let cost = up.baseCost * Math.pow(up.multiplier, lvl);
+            let powerBonus = (lvl * up.basePower * Math.pow(up.multiplier, lvl)).toFixed(3);
+            powerContainer.innerHTML += `<div class="upgrade-item" onclick="buyPower(${idx})">
+                <div class="upgrade-info"><div class="upgrade-name">${up.name} lv.${lvl}</div><div class="upgrade-desc">${up.desc}</div></div>
+                <div class="upgrade-stats"><div class="upgrade-price">💰 ${cost.toFixed(2)}</div><div class="upgrade-level">⚡ +${powerBonus}</div></div>
+            </div>`;
+        });
+        
+        const miningContainer = document.getElementById('miningUpgrades');
+        miningContainer.innerHTML = '';
+        miningUpgrades.forEach((up, idx) => {
+            let lvl = miningLevels[idx];
+            let cost = up.baseCost * Math.pow(up.multiplier, lvl);
+            let incomeBonus = (lvl * up.baseIncome * Math.pow(up.multiplier, lvl)).toFixed(3);
+            miningContainer.innerHTML += `<div class="upgrade-item" onclick="buyMining(${idx})">
+                <div class="upgrade-info"><div class="upgrade-name">${up.name} lv.${lvl}</div><div class="upgrade-desc">${up.desc}</div></div>
+                <div class="upgrade-stats"><div class="upgrade-price">💰 ${cost.toFixed(2)}</div><div class="upgrade-level">⛏️ +${incomeBonus}/сек</div></div>
+            </div>`;
+        });
+        
+        const energyContainer = document.getElementById('energyUpgrades');
+        energyContainer.innerHTML = '';
+        energyUpgrades.forEach((up, idx) => {
+            let lvl = energyLevels[idx];
+            let cost = up.baseCost * Math.pow(up.multiplier, lvl);
+            let bonus = up.type === 'regen' ? `+${(lvl * up.baseRegen * Math.pow(up.multiplier, lvl)).toFixed(1)}/сек` : `+${(lvl * up.baseMax * Math.pow(up.multiplier, lvl))} макс.`;
+            energyContainer.innerHTML += `<div class="upgrade-item" onclick="buyEnergy(${idx})">
+                <div class="upgrade-info"><div class="upgrade-name">${up.name} lv.${lvl}</div><div class="upgrade-desc">${up.desc}</div></div>
+                <div class="upgrade-stats"><div class="upgrade-price">💰 ${cost.toFixed(2)}</div><div class="upgrade-level">⚡ ${bonus}</div></div>
+            </div>`;
+        });
+    }
+    
+    function buyPower(idx) {
+        let lvl = powerLevels[idx];
+        let cost = powerUpgrades[idx].baseCost * Math.pow(powerUpgrades[idx].multiplier, lvl);
+        if (score >= cost) {
+            score -= cost;
+            powerLevels[idx]++;
+            recalcStats();
+            save();
+            vibrate(50);
+            playClickSound();
+        } else vibrate(100);
+    }
+    
+    function buyMining(idx) {
+        let lvl = miningLevels[idx];
+        let cost = miningUpgrades[idx].baseCost * Math.pow(miningUpgrades[idx].multiplier, lvl);
+        if (score >= cost) {
+            score -= cost;
+            miningLevels[idx]++;
+            recalcStats();
+            save();
+            vibrate(50);
+            playClickSound();
+        } else vibrate(100);
+    }
+    
+    function buyEnergy(idx) {
+        let lvl = energyLevels[idx];
+        let cost = energyUpgrades[idx].baseCost * Math.pow(energyUpgrades[idx].multiplier, lvl);
+        if (score >= cost) {
+            score -= cost;
+            energyLevels[idx]++;
+            recalcStats();
+            save();
+            vibrate(50);
+            playClickSound();
+        } else vibrate(100);
+    }
+    
+    function updateAll() {
+        recalcStats();
+        updateUI();
+        renderShop();
+    }
+    
+    function vibrate(d) { if(navigator.vibrate) navigator.vibrate(d); }
+    function playClickSound() {
+        let el = document.getElementById('clickSound'+soundIndex);
+        if(el) { el.pause(); el.currentTime=0; el.play().catch(e=>{}); }
+        soundIndex = (soundIndex+1)%5;
+    }
+    
+    function clickChip(event) {
+        if(currentEnergy < 1) { vibrate(50); return; }
+        currentEnergy -= 1;
+        score += currentPower;
+        save();
+        vibrate(15);
+        playClickSound();
+        let img = document.getElementById('cookieImg');
+        img.style.transform='scale(0.97)'; setTimeout(()=>img.style.transform='',80);
+        let t = document.createElement('div');
+        t.innerText = '+'+currentPower.toFixed(2);
+        t.style.position='fixed';
+        let x = event.touches ? event.touches[0].clientX : event.clientX;
+        let y = event.touches ? event.touches[0].clientY : event.clientY;
+        t.style.left=(x-20)+'px'; t.style.top=(y-30)+'px';
+        t.style.fontSize='24px'; t.style.fontWeight='bold'; t.style.color='#ffaa33';
+        t.style.textShadow='1px 1px 0 #8b4513'; t.style.pointerEvents='none'; t.style.zIndex='1000';
+        document.body.appendChild(t); setTimeout(()=>t.remove(),500);
+    }
+    
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+        document.getElementById(id+'Screen').classList.add('active');
+        document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+        document.querySelector(`.nav-btn[data-screen="${id}"]`).classList.add('active');
+        if(id === 'shop') renderShop();
+    }
+    
+    // Переключение вкладок магазина
+    document.querySelectorAll('.shop-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.shop-tab').forEach(t=>t.classList.remove('active'));
+            tab.classList.add('active');
+            let t = tab.getAttribute('data-tab');
+            document.getElementById('powerUpgrades').style.display = t==='power' ? 'flex' : 'none';
+            document.getElementById('miningUpgrades').style.display = t==='mining' ? 'flex' : 'none';
+            document.getElementById('energyUpgrades').style.display = t==='energy' ? 'flex' : 'none';
+        });
+    });
+    
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', () => showScreen(btn.getAttribute('data-screen')));
+    });
+    
+    setInterval(() => {
+        if(currentEnergy < maxEnergy) {
+            currentEnergy = Math.min(currentEnergy + energyRegen, maxEnergy);
+            save();
+        }
+        score += currentIncome;
+        save();
+    }, 1000);
+    
+    updateAll();
+    document.body.addEventListener('touchstart', ()=>{}, {once:true});
+</script>
+</body>
+  </html>

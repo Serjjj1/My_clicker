@@ -505,6 +505,10 @@
     
     updateAll();
     document.body.addEventListener('touchstart', ()=>{}, {once:true});
+
+    setInterval(() => {
+    save();
+}, 1000);
 </script>
 </body>
   </html>

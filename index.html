@@ -296,12 +296,12 @@
     let miningLevels = localStorage.miningLevels ? JSON.parse(localStorage.miningLevels) : [0,0,0,0,0];
     let energyLevels = localStorage.energyLevels ? JSON.parse(localStorage.energyLevels) : [0,0];
     
-    let currentPower = 0.001 + powerLevels.reduce((sum, lvl, idx) => sum + (lvl * powerUpgrades[idx].basePower * Math.pow(powerUpgrades[idx].multiplier, lvl)), 0);
-    let currentIncome = miningLevels.reduce((sum, lvl, idx) => sum + (lvl * miningUpgrades[idx].baseIncome * Math.pow(miningUpgrades[idx].multiplier, lvl)), 0);
+    let currentPower = 0.001;
+    let currentIncome = 0;
     
-    let maxEnergy = 500 + (energyLevels[1] * energyUpgrades[1].baseMax * Math.pow(energyUpgrades[1].multiplier, energyLevels[1]));
-    let currentEnergy = localStorage.currentEnergy ? parseFloat(localStorage.currentEnergy) : maxEnergy;
-    let energyRegen = 5 + (energyLevels[0] * energyUpgrades[0].baseRegen * Math.pow(energyUpgrades[0].multiplier, energyLevels[0]));
+    let maxEnergy = 500;
+    let currentEnergy = localStorage.currentEnergy ? parseFloat(localStorage.currentEnergy) : 500;
+    let energyRegen = 1;
     
     let soundIndex = 0;
     
@@ -312,7 +312,7 @@
         localStorage.miningLevels = JSON.stringify(miningLevels);
         localStorage.energyLevels = JSON.stringify(energyLevels);
         localStorage.currentEnergy = currentEnergy;
-        updateAll();
+        updateAll();  // ← пересчитываем всё после сохранения
     }
     
     function recalcStats() {

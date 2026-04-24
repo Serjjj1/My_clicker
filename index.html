@@ -304,6 +304,18 @@
     let energyRegen = 1;
     
     let soundIndex = 0;
+
+    // === ЗАГРУЗКА ДАННЫХ ПРИ СТАРТЕ ===
+    if (localStorage.getItem('score') !== null) {
+        score = parseFloat(localStorage.getItem('score'));
+        powerLevels = JSON.parse(localStorage.getItem('powerLevels'));
+        miningLevels = JSON.parse(localStorage.getItem('miningLevels'));
+        energyLevels = JSON.parse(localStorage.getItem('energyLevels'));
+        currentEnergy = parseFloat(localStorage.getItem('currentEnergy'));
+        console.log("Данные загружены:", score);
+    } else {
+    console.log("Нет сохранённых данных, начинаем новую игру");
+    }
     
     // === ФУНКЦИИ ===
     function save() {
@@ -425,9 +437,10 @@
     }
     
     function updateAll() {
-        recalcStats();
-        updateUI();
-        renderShop();
+    recalcStats();
+    updateUI();
+    renderShop();
+    save();  // ← Добавляем автосохранение после любого обновления
     }
     
     function vibrate(d) { if(navigator.vibrate) navigator.vibrate(d); }

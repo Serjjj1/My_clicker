@@ -307,12 +307,18 @@
     
     // === ФУНКЦИИ ===
     function save() {
-        localStorage.score = score;
-        localStorage.powerLevels = JSON.stringify(powerLevels);
-        localStorage.miningLevels = JSON.stringify(miningLevels);
-        localStorage.energyLevels = JSON.stringify(energyLevels);
-        localStorage.currentEnergy = currentEnergy;
-        updateAll();  // ← пересчитываем всё после сохранения
+    try {
+        console.log("Сохраняем: score=", score);
+        localStorage.setItem('score', score);
+        localStorage.setItem('powerLevels', JSON.stringify(powerLevels));
+        localStorage.setItem('miningLevels', JSON.stringify(miningLevels));
+        localStorage.setItem('energyLevels', JSON.stringify(energyLevels));
+        localStorage.setItem('currentEnergy', currentEnergy);
+        console.log("Сохранение выполнено");
+    } catch(e) {
+        console.error("Ошибка сохранения:", e);
+    }
+    updateUI();  // Обновляем отображение, но не пересчитываем
     }
     
     function recalcStats() {

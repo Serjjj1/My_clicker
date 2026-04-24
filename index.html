@@ -501,7 +501,7 @@ body::before {
     // === ВОССТАНОВЛЕНИЕ ЭНЕРГИИ ===
     setInterval(() => {
         if (currentEnergy < maxEnergy) {
-            currentEnergy = Math.min(currentEnergy + 10, maxEnergy);
+            currentEnergy = Math.min(currentEnergy + 1, maxEnergy);
             save();
         }
     }, 1000);

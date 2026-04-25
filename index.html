@@ -219,6 +219,7 @@
         }
 
         audio { display: none; }
+        .coming-soon { text-align:center; background:rgba(0,0,0,0.6); padding:30px; border-radius:40px; color:white; }
     </style>
 </head>
 <body>
@@ -244,7 +245,7 @@
 </div>
 
 <div id="ratingScreen" class="screen">
-    <div class="coming-soon" style="text-align:center; background:rgba(0,0,0,0.6); padding:30px; border-radius:40px; color:white;">🏆 Рейтинг<br><span style="font-size:16px;">В разработке</span></div>
+    <div class="coming-soon">🏆 Рейтинг<br><span style="font-size:16px;">В разработке</span></div>
 </div>
 
 <div class="navbar">
@@ -260,7 +261,6 @@
 <audio id="clickSound4" preload="auto"><source src="clicking.wav" type="audio/wav"></audio>
 
 <script>
-    // === ДАННЫЕ УЛУЧШЕНИЙ ===
     const powerUpgrades = [
         { baseCost: 0.5, basePower: 0.001, multiplier: 1.4, name: "Младший транзистор", desc: "+0.001 силы" },
         { baseCost: 2, basePower: 0.005, multiplier: 1.4, name: "Логический элемент", desc: "+0.005 силы" },
@@ -294,11 +294,18 @@
     let energyRegen = 5;
     let soundIndex = 0;
     
-    // === ОПРЕДЕЛЯЕМ СРЕДУ ===
-    let isTelegram = window.Telegram && window.Telegram.WebApp;
-    let cloudStorage = isTelegram ? window.Telegram.WebApp.CloudStorage : null;
+    // === Telegram CloudStorage ===
+    let webApp = window.Telegram?.WebApp;
+    let cloudStorage = webApp?.CloudStorage;
+    let isTelegram = !!cloudStorage;
     
-    // === СОХРАНЕНИЕ (РАБОТАЕТ ВЕЗДЕ) ===
+    if (isTelegram) {
+        webApp.ready();
+        webApp.expand();
+        console.log("Telegram WebApp готов");
+    }
+    
+    // === СОХРАНЕНИЕ ===
     function save() {
         let gameData = {
             score: score,
@@ -307,16 +314,16 @@
             energyLevels: energyLevels,
             currentEnergy: currentEnergy
         };
-        let dataStr = JSON.stringify(gameData);
+        let dataString = JSON.stringify(gameData);
         
-        if (cloudStorage) {
-            cloudStorage.setItem('mining_game_data', dataStr, (err) => {
-                if (err) console.log("CloudStorage ошибка:", err);
+        if (isTelegram) {
+            cloudStorage.setItem("mining_game_data", dataString, (error, success) => {
+                if (error) console.log("Ошибка сохранения:", error);
                 else console.log("Сохранено в CloudStorage");
             });
         } else {
             try {
-                localStorage.setItem('mining_game_data', dataStr);
+                localStorage.setItem("mining_game_data", dataString);
                 console.log("Сохранено в localStorage");
             } catch(e) { console.log("Ошибка localStorage"); }
         }
@@ -324,9 +331,12 @@
     
     // === ЗАГРУЗКА ===
     function load() {
-        if (cloudStorage) {
-            cloudStorage.getItem('mining_game_data', (err, value) => {
-                if (!err && value) {
+        if (isTelegram) {
+            cloudStorage.getItem("mining_game_data", (error, value) => {
+                if (error) {
+                    console.log("Ошибка загрузки:", error);
+                    finishLoad();
+                } else if (value) {
                     try {
                         let data = JSON.parse(value);
                         score = data.score || 0;
@@ -337,13 +347,13 @@
                         console.log("Загружено из CloudStorage");
                     } catch(e) { console.log("Ошибка парсинга"); }
                 } else {
-                    console.log("Нет сохранений в CloudStorage, начинаем новую игру");
+                    console.log("Нет сохранений");
                 }
                 finishLoad();
             });
         } else {
             try {
-                let saved = localStorage.getItem('mining_game_data');
+                let saved = localStorage.getItem("mining_game_data");
                 if (saved) {
                     let data = JSON.parse(saved);
                     score = data.score || 0;
@@ -362,10 +372,6 @@
         recalcStats();
         updateUI();
         renderShop();
-        if (isTelegram) {
-            window.Telegram.WebApp.ready();
-            window.Telegram.WebApp.expand();
-        }
     }
     
     // === РАСЧЁТ СТАТОВ ===
@@ -443,7 +449,6 @@
         }
     }
     
-    // === ПОКУПКИ ===
     function buyPower(idx) {
         let lvl = powerLevels[idx];
         let cost = powerUpgrades[idx].baseCost * Math.pow(powerUpgrades[idx].multiplier, lvl);
@@ -452,10 +457,10 @@
             powerLevels[idx]++;
             recalcStats();
             save();
-            vibrate(50);
-            playClickSound();
             updateUI();
             renderShop();
+            vibrate(50);
+            playClickSound();
         } else vibrate(100);
     }
     
@@ -467,10 +472,10 @@
             miningLevels[idx]++;
             recalcStats();
             save();
-            vibrate(50);
-            playClickSound();
             updateUI();
             renderShop();
+            vibrate(50);
+            playClickSound();
         } else vibrate(100);
     }
     
@@ -482,10 +487,10 @@
             energyLevels[idx]++;
             recalcStats();
             save();
-            vibrate(50);
-            playClickSound();
             updateUI();
             renderShop();
+            vibrate(50);
+            playClickSound();
         } else vibrate(100);
     }
     
@@ -573,4 +578,4 @@
     document.body.addEventListener('touchstart', () => {}, { once: true });
 </script>
 </body>
-</html>
+    </html>

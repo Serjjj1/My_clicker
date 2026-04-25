@@ -509,6 +509,26 @@
     setInterval(() => {
     save();
 }, 1000);
+    // === ВРЕМЕННАЯ КНОПКА СБРОСА ===
+document.getElementById('resetBtn').addEventListener('click', () => {
+    localStorage.clear();
+    if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.CloudStorage?.clear();
+    }
+    score = 0;
+    powerLevels = [0,0,0,0,0];
+    miningLevels = [0,0,0,0,0];
+    energyLevels = [0,0];
+    currentEnergy = 500;
+    recalcStats();
+    save();
+    updateUI();
+    alert('Прогресс сброшен! Перезагрузите страницу.');
+    window.location.reload();
+});
 </script>
+    <div style="position: fixed; bottom: 100px; right: 10px; background: red; padding: 5px 10px; border-radius: 20px; z-index: 9999;">
+    <button id="resetBtn" style="font-size: 12px;">Сброс</button>
+    </div>
 </body>
   </html>

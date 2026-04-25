@@ -294,34 +294,16 @@
     let energyRegen = 5;
     let soundIndex = 0;
     
-    // === Telegram CloudStorage ===
+    // === Telegram WebApp (только для интерфейса, НЕ для сохранения) ===
     let webApp = window.Telegram?.WebApp;
-    let cloudStorage = webApp?.CloudStorage;
-    let isTelegram = !!cloudStorage;
-    let isTelegramReady = false;
-
-    if (isTelegram) {
+    if (webApp) {
         webApp.ready();
         webApp.expand();
-    
-        // Ждём готовности CloudStorage
-        setTimeout(() => {
-            isTelegramReady = true;
-            console.log("Telegram WebApp и CloudStorage готовы");
-            load(); // Загружаем только после готовности
-        }, 100);
-    } else {
-        load(); // Для браузера загружаем сразу
+        console.log("Telegram WebApp готов");
     }
     
-    // === СОХРАНЕНИЕ ===
-    function save() {
-        if (isTelegram && !isTelegramReady) {
-            console.log("CloudStorage ещё не готов, пропускаем сохранение");
-            return;
-        }
-    
-        // 👇 Эти строки должны быть ПОСЛЕ return, а не внутри if
+    // === ПРОСТОЕ СОХРАНЕНИЕ В localStorage (РАБОТАЕТ ВСЕГДА) ===
+    function saveGame() {
         let gameData = {
             score: score,
             powerLevels: powerLevels,
@@ -329,64 +311,42 @@
             energyLevels: energyLevels,
             currentEnergy: currentEnergy
         };
-        let dataString = JSON.stringify(gameData);
-    
-        if (isTelegram) {
-            cloudStorage.setItem("mining_game_data", dataString, (error, success) => {
-                if (error) console.log("Ошибка сохранения:", error);
-                else console.log("Сохранено в CloudStorage");
-            });
-        } else {
-            try {
-                localStorage.setItem("mining_game_data", dataString);
-                console.log("Сохранено в localStorage");
-            } catch(e) { console.log("Ошибка localStorage"); }
-        }
+        localStorage.setItem("mining_game_data", JSON.stringify(gameData));
+        console.log("✅ Игра сохранена", { score: score.toFixed(2) });
     }
     
-    // === ЗАГРУЗКА ===
-    function load() {
-        if (isTelegram) {
-            cloudStorage.getItem("mining_game_data", (error, value) => {
-                if (error) {
-                    console.log("Ошибка загрузки:", error);
-                    finishLoad();
-                } else if (value) {
-                    try {
-                        let data = JSON.parse(value);
-                        score = data.score || 0;
-                        powerLevels = data.powerLevels || [0,0,0,0,0];
-                        miningLevels = data.miningLevels || [0,0,0,0,0];
-                        energyLevels = data.energyLevels || [0,0];
-                        currentEnergy = data.currentEnergy || 500;
-                        console.log("Загружено из CloudStorage");
-                    } catch(e) { console.log("Ошибка парсинга"); }
-                } else {
-                    console.log("Нет сохранений");
-                }
-                finishLoad();
-            });
-        } else {
+    // === ЗАГРУЗКА ИГРЫ ===
+    function loadGame() {
+        let saved = localStorage.getItem("mining_game_data");
+        if (saved) {
             try {
-                let saved = localStorage.getItem("mining_game_data");
-                if (saved) {
-                    let data = JSON.parse(saved);
-                    score = data.score || 0;
-                    powerLevels = data.powerLevels || [0,0,0,0,0];
-                    miningLevels = data.miningLevels || [0,0,0,0,0];
-                    energyLevels = data.energyLevels || [0,0];
-                    currentEnergy = data.currentEnergy || 500;
-                    console.log("Загружено из localStorage");
-                }
-            } catch(e) { console.log("Ошибка localStorage"); }
-            finishLoad();
+                let data = JSON.parse(saved);
+                score = data.score || 0;
+                powerLevels = data.powerLevels || [0,0,0,0,0];
+                miningLevels = data.miningLevels || [0,0,0,0,0];
+                energyLevels = data.energyLevels || [0,0];
+                currentEnergy = data.currentEnergy || 500;
+                console.log("✅ Загружено из localStorage", { score: score.toFixed(2) });
+            } catch(e) {
+                console.log("Ошибка загрузки:", e);
+                startNewGame();
+            }
+        } else {
+            console.log("🆕 Нет сохранений, начинаем новую игру");
+            startNewGame();
         }
-    }
-    
-    function finishLoad() {
+        
         recalcStats();
         updateUI();
         renderShop();
+    }
+    
+    function startNewGame() {
+        score = 0;
+        powerLevels = [0,0,0,0,0];
+        miningLevels = [0,0,0,0,0];
+        energyLevels = [0,0];
+        currentEnergy = 500;
     }
     
     // === РАСЧЁТ СТАТОВ ===
@@ -471,7 +431,7 @@
             score -= cost;
             powerLevels[idx]++;
             recalcStats();
-            save();
+            saveGame();
             updateUI();
             renderShop();
             vibrate(50);
@@ -486,7 +446,7 @@
             score -= cost;
             miningLevels[idx]++;
             recalcStats();
-            save();
+            saveGame();
             updateUI();
             renderShop();
             vibrate(50);
@@ -501,7 +461,7 @@
             score -= cost;
             energyLevels[idx]++;
             recalcStats();
-            save();
+            saveGame();
             updateUI();
             renderShop();
             vibrate(50);
@@ -521,7 +481,7 @@
         if(currentEnergy < 1) { vibrate(50); return; }
         currentEnergy -= 1;
         score += currentPower;
-        save();
+        saveGame();
         vibrate(15);
         playClickSound();
         let img = document.getElementById('cookieImg');
@@ -584,13 +544,13 @@
             updateUI();
         }
         score += currentIncome;
-        save();
+        saveGame();
         updateUI();
     }, 1000);
     
     // === ЗАПУСК ===
-    load();
+    loadGame();
     document.body.addEventListener('touchstart', () => {}, { once: true });
-</script>
+            </script>
 </body>
     </html>

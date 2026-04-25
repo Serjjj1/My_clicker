@@ -316,9 +316,12 @@
     
     // === СОХРАНЕНИЕ ===
     function save() {
-    if (isTelegram && !isTelegramReady) {
-        console.log("CloudStorage ещё не готов, пропускаем сохранение");
-        return;
+        if (isTelegram && !isTelegramReady) {
+            console.log("CloudStorage ещё не готов, пропускаем сохранение");
+            return;
+        }
+    
+        // 👇 Эти строки должны быть ПОСЛЕ return, а не внутри if
         let gameData = {
             score: score,
             powerLevels: powerLevels,
@@ -327,7 +330,7 @@
             currentEnergy: currentEnergy
         };
         let dataString = JSON.stringify(gameData);
-        
+    
         if (isTelegram) {
             cloudStorage.setItem("mining_game_data", dataString, (error, success) => {
                 if (error) console.log("Ошибка сохранения:", error);

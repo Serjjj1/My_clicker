@@ -293,16 +293,16 @@
     let currentEnergy = 500;
     let energyRegen = 5;
     let soundIndex = 0;
-    
-    // === Telegram WebApp (только для интерфейса, НЕ для сохранения) ===
-    let webApp = window.Telegram?.WebApp;
+
+        // === Telegram WebApp + CloudStorage (сохранение теперь работает в TG!) ===
+    let webApp = window.Telegram?.WebApp || null;
     if (webApp) {
         webApp.ready();
         webApp.expand();
-        console.log("Telegram WebApp готов");
+        console.log("✅ Telegram WebApp готов");
     }
-    
-    // === ПРОСТОЕ СОХРАНЕНИЕ В localStorage (РАБОТАЕТ ВСЕГДА) ===
+
+    // === УЛУЧШЕННОЕ СОХРАНЕНИЕ ===
     function saveGame() {
         let gameData = {
             score: score,
@@ -311,36 +311,80 @@
             energyLevels: energyLevels,
             currentEnergy: currentEnergy
         };
-        localStorage.setItem("mining_game_data", JSON.stringify(gameData));
-        console.log("✅ Игра сохранена", { score: score.toFixed(2) });
+        const dataStr = JSON.stringify(gameData);
+
+        // Всегда сохраняем в localStorage (для браузера)
+        localStorage.setItem("mining_game_data", dataStr);
+        console.log("💾 Сохранено в localStorage");
+
+        // Если открыто в Telegram — сохраняем в CloudStorage
+        if (webApp && webApp.CloudStorage) {
+            webApp.CloudStorage.setItem("mining_game_data", dataStr, (error) => {
+                if (error) {
+                    console.error("❌ Ошибка CloudStorage:", error);
+                } else {
+                    console.log("✅ Сохранено в Telegram CloudStorage");
+                }
+            });
+        }
     }
-    
-    // === ЗАГРУЗКА ИГРЫ ===
+
+    // === ЗАГРУЗКА ИГРЫ (с приоритетом CloudStorage в TG) ===
     function loadGame() {
+        if (webApp && webApp.CloudStorage) {
+            // В Telegram сначала пытаемся взять из CloudStorage
+            webApp.CloudStorage.getItem("mining_game_data", (error, value) => {
+                if (error || !value) {
+                    console.log("🌐 CloudStorage пуст → загружаем из localStorage");
+                    loadFromLocalStorage();
+                } else {
+                    try {
+                        const data = JSON.parse(value);
+                        applyGameData(data);
+                        console.log("✅ Загружено из Telegram CloudStorage");
+                        recalcStats();
+                        updateUI();
+                        renderShop();
+                    } catch (e) {
+                        console.error("Ошибка парсинга CloudStorage:", e);
+                        loadFromLocalStorage();
+                    }
+                }
+            });
+        } else {
+            // Обычный браузер
+            loadFromLocalStorage();
+        }
+    }
+
+    function loadFromLocalStorage() {
         let saved = localStorage.getItem("mining_game_data");
         if (saved) {
             try {
                 let data = JSON.parse(saved);
-                score = data.score || 0;
-                powerLevels = data.powerLevels || [0,0,0,0,0];
-                miningLevels = data.miningLevels || [0,0,0,0,0];
-                energyLevels = data.energyLevels || [0,0];
-                currentEnergy = data.currentEnergy || 500;
-                console.log("✅ Загружено из localStorage", { score: score.toFixed(2) });
+                applyGameData(data);
+                console.log("Загружено из localStorage");
             } catch(e) {
                 console.log("Ошибка загрузки:", e);
                 startNewGame();
             }
         } else {
-            console.log("🆕 Нет сохранений, начинаем новую игру");
+            console.log("Нет сохранений, начинаем новую игру");
             startNewGame();
         }
-        
         recalcStats();
         updateUI();
         renderShop();
     }
-    
+
+    function applyGameData(data) {
+        score = data.score || 0;
+        powerLevels = data.powerLevels || [0,0,0,0,0];
+        miningLevels = data.miningLevels || [0,0,0,0,0];
+        energyLevels = data.energyLevels || [0,0];
+        currentEnergy = data.currentEnergy || 500;
+    }
+
     function startNewGame() {
         score = 0;
         powerLevels = [0,0,0,0,0];

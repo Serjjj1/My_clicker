@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test CloudStorage</title>
+    <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
+    <style>
+        body {
+            font-family: system-ui;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background: #e4e4e4;
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px;
+            cursor: pointer;
+            border-radius: 12px;
+        }
+        #log {
+            background: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            width: 90%;
+            margin-top: 20px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+    </style>
+</head>
+<body>
+    <h2>🧪 Тест CloudStorage</h2>
+    <button id="saveBtn">💾 Сохранить данные</button>
+    <button id="loadBtn">📂 Загрузить данные</button>
+    <div id="log">=== Лог действий ===</div>
+
+    <script>
+        let telegramReady = false;
+        if (window.Telegram && window.Telegram.WebApp) {
+            telegramReady = true;
+            window.Telegram.WebApp.ready();
+            window.Telegram.WebApp.expand(); // Растягиваем на весь экран
+            addLog('✅ Telegram WebApp готов к работе.');
+        } else {
+            addLog('❌ Telegram WebApp НЕ обнаружен!');
+        }
+
+        // Функция для вывода сообщений в наш блок лога
+        function addLog(message) {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `\n[${time}] ${message}`;
+            console.log(message);
+        }
+
+        // --- СОХРАНЕНИЕ ---
+        document.getElementById('saveBtn').onclick = () => {
+            if (!telegramReady) {
+                addLog('❌ Ошибка: Telegram WebApp не готов.');
+                return;
+            }
+            
+            addLog('🔄 Пытаемся сохранить данные...');
+            // Готовим простые данные для теста
+            const testData = {
+                score: 999,
+                message: "Привет из Mini App!"
+            };
+            const dataString = JSON.stringify(testData);
+            
+            // Убедимся, что ключ соответствует строгим правилам
+            storageKey = "game_data_1"; // Только a-z, 0-9, _
+            
+            // Вызываем CloudStorage.setItem
+            window.Telegram.WebApp.CloudStorage.setItem(storageKey, dataString, (error, success) => {
+                if (error) {
+                    addLog(`❌ Ошибка при сохранении: ${error}`);
+                } else if (success) {
+                    addLog(`✅ Данные УСПЕШНО сохранены! Ключ: ${storageKey}`);
+                } else {
+                    addLog(`⚠️ Неизвестный результат: success = ${success}`);
+                }
+            });
+        };
+
+        // --- ЗАГРУЗКА ---
+        document.getElementById('loadBtn').onclick = () => {
+            if (!telegramReady) {
+                addLog('❌ Ошибка: Telegram WebApp не готов.');
+                return;
+            }
+            
+            addLog('🔄 Пытаемся загрузить данные...');
+            storageKey = "game_data_1";
+            
+            window.Telegram.WebApp.CloudStorage.getItem(storageKey, (error, value) => {
+                if (error) {
+                    addLog(`❌ Ошибка при загрузке: ${error}`);
+                } else if (value) {
+                    addLog(`✅ Данные загружены! Ключ: ${storageKey}`);
+                    addLog(`📦 Содержимое: ${value}`);
+                    try {
+                        const parsed = JSON.parse(value);
+                        addLog(`🔍 Разобранные данные: score = ${parsed.score}, message = "${parsed.message}"`);
+                    } catch (e) {
+                        addLog(`⚠️ Не удалось разобрать JSON.`);
+                    }
+                } else {
+                    addLog(`ℹ️ Данные по ключу "${storageKey}" не найдены. Возможно, вы ещё не нажали "Сохранить".`);
+                }
+            });
+        };
+    </script>
+</body>
+</html>

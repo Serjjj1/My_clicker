@@ -298,15 +298,27 @@
     let webApp = window.Telegram?.WebApp;
     let cloudStorage = webApp?.CloudStorage;
     let isTelegram = !!cloudStorage;
-    
+    let isTelegramReady = false;
+
     if (isTelegram) {
         webApp.ready();
         webApp.expand();
-        console.log("Telegram WebApp готов");
+    
+        // Ждём готовности CloudStorage
+        setTimeout(() => {
+            isTelegramReady = true;
+            console.log("Telegram WebApp и CloudStorage готовы");
+            load(); // Загружаем только после готовности
+        }, 100);
+    } else {
+        load(); // Для браузера загружаем сразу
     }
     
     // === СОХРАНЕНИЕ ===
     function save() {
+    if (isTelegram && !isTelegramReady) {
+        console.log("CloudStorage ещё не готов, пропускаем сохранение");
+        return;
         let gameData = {
             score: score,
             powerLevels: powerLevels,

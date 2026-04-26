@@ -294,66 +294,73 @@
     let energyRegen = 5;
     let soundIndex = 0;
 
-        // === Telegram WebApp + CloudStorage (надёжное сохранение для каждого игрока) ===
+            // === Telegram WebApp + Google Sheets (личная база для каждого игрока) ===
     let webApp = window.Telegram?.WebApp;
+    let userId = null;
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxWkNRCN8q3D5RW_rjvCaw2m7OCxBYwrdBAyWnvWV9spg7NLALUieSAhXwcufIdPSc9/exec";
+
     if (webApp) {
         webApp.ready();
         webApp.expand();
-        console.log("✅ Telegram WebApp готов");
+        userId = webApp.initDataUnsafe?.user?.id;
+        console.log("✅ Telegram Mini App + userId =", userId);
     }
 
-    // === СОХРАНЕНИЕ ===
+    // === СОХРАНЕНИЕ В GOOGLE SHEETS ===
     function saveGame() {
-        const gameData = JSON.stringify({
+        const gameDataObj = {
             score: score,
             powerLevels: powerLevels,
             miningLevels: miningLevels,
             energyLevels: energyLevels,
             currentEnergy: currentEnergy
-        });
+        };
+        const gameData = JSON.stringify(gameDataObj);
 
-        // Всегда сохраняем в localStorage (резерв)
+        // резерв в localStorage (на всякий случай)
         localStorage.setItem("mining_game_data", gameData);
 
-        // Основное сохранение — в Telegram CloudStorage
-        if (webApp && webApp.CloudStorage) {
-            webApp.CloudStorage.setItem("mining_game_data", gameData, (error) => {
-                if (error) {
-                    console.error("❌ CloudStorage ошибка:", error);
-                } else {
-                    console.log("✅ Сохранено в Telegram CloudStorage");
-                }
-            });
-        }
+        if (!userId) return;
+
+        fetch(SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify({ userId: userId, gameData: gameData }),
+            headers: { "Content-Type": "application/json" }
+        })
+        .then(() => console.log("✅ Сохранено в Google Sheets"))
+        .catch(err => console.error("❌ Ошибка сохранения в Sheets:", err));
     }
 
-    // === ЗАГРУЗКА ===
+    // === ЗАГРУЗКА ИЗ GOOGLE SHEETS ===
     function loadGame() {
-        if (webApp && webApp.CloudStorage) {
-            webApp.CloudStorage.getItem("mining_game_data", (error, value) => {
-                if (error || !value) {
-                    console.log("🌐 CloudStorage пуст → localStorage");
-                    loadFromLocalStorage();
+        if (!userId) {
+            loadFromLocalStorage();
+            return;
+        }
+
+        fetch(`${SCRIPT_URL}?userId=${userId}`)
+            .then(res => res.text())
+            .then(data => {
+                if (data === "null" || !data) {
+                    console.log("Новый игрок → начинаем с нуля");
+                    startNewGame();
                 } else {
-                    try {
-                        const data = JSON.parse(value);
-                        score = data.score || 0;
-                        powerLevels = data.powerLevels || [0,0,0,0,0];
-                        miningLevels = data.miningLevels || [0,0,0,0,0];
-                        energyLevels = data.energyLevels || [0,0];
-                        currentEnergy = data.currentEnergy || 500;
-                        console.log("✅ Загружено из Telegram CloudStorage");
-                    } catch (e) {
-                        loadFromLocalStorage();
-                    }
+                    const parsed = JSON.parse(data);
+                    score = parsed.score || 0;
+                    powerLevels = parsed.powerLevels || [0,0,0,0,0];
+                    miningLevels = parsed.miningLevels || [0,0,0,0,0];
+                    energyLevels = parsed.energyLevels || [0,0];
+                    currentEnergy = parsed.currentEnergy || 500;
+                    console.log("✅ Загружено из Google Sheets");
                 }
                 recalcStats();
                 updateUI();
                 renderShop();
+            })
+            .catch(() => {
+                console.log("Не удалось загрузить из Sheets → localStorage");
+                loadFromLocalStorage();
             });
-        } else {
-            loadFromLocalStorage();
-        }
     }
 
     function loadFromLocalStorage() {
@@ -366,7 +373,9 @@
                 miningLevels = data.miningLevels || [0,0,0,0,0];
                 energyLevels = data.energyLevels || [0,0];
                 currentEnergy = data.currentEnergy || 500;
+                console.log("Загружено из localStorage");
             } catch(e) {
+                console.log("Ошибка загрузки localStorage");
                 startNewGame();
             }
         } else {

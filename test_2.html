@@ -261,332 +261,232 @@
 <audio id="clickSound4" preload="auto"><source src="clicking.wav" type="audio/wav"></audio>
 
 <script>
-    const powerUpgrades = [
-        { baseCost: 0.5, basePower: 0.001, multiplier: 1.4, name: "Младший транзистор", desc: "+0.001 силы" },
-        { baseCost: 2, basePower: 0.005, multiplier: 1.4, name: "Логический элемент", desc: "+0.005 силы" },
-        { baseCost: 10, basePower: 0.3, multiplier: 1.5, name: "Интегральная схема", desc: "+0.3 силы" },
-        { baseCost: 25, basePower: 0.8, multiplier: 1.5, name: "Тактовый генератор", desc: "+0.8 силы" },
-        { baseCost: 100, basePower: 3.5, multiplier: 1.6, name: "Кремниевая пластина", desc: "+3.5 силы" }
-    ];
+// ==================== ОСНОВНЫЕ ПЕРЕМЕННЫЕ ====================
+let balance = 0;                    // текущий баланс (отображается с .000)
+let clickPower = 0.01;              // базовая мощность одного клика
+let passiveMining = 0;              // пассивный доход в секунду
+let maxEnergy = 500;
+let currentEnergy = 500;
+let energyRegen = 5;                // энергия в секунду
+
+const ENERGY_COST_PER_CLICK = 1;    // сколько энергии тратится за клик (можно потом изменить)
+
+// ==================== УЛУЧШЕНИЯ ====================
+const powerUpgrades = [
+    { id: "p1", name: "Мощность клика I",  basePrice: 0.5,  bonus: 0.001, multiplier: 1.40, level: 0 },
+    { id: "p2", name: "Мощность клика II", basePrice: 2,    bonus: 0.005, multiplier: 1.40, level: 0 },
+    { id: "p3", name: "Мощность клика III",basePrice: 10,   bonus: 0.03,  multiplier: 1.50, level: 0 },
+    { id: "p4", name: "Мощность клика IV", basePrice: 100,  bonus: 0.35,  multiplier: 1.50, level: 0 },
+    { id: "p5", name: "Мощность клика V",  basePrice: 250,  bonus: 1,     multiplier: 1.60, level: 0 }
+];
+
+const miningUpgrades = [
+    { id: "m1", name: "Скорость майнинга I",  basePrice: 2,    bonus: 0.001, multiplier: 1.50, level: 0 },
+    { id: "m2", name: "Скорость майнинга II", basePrice: 10,   bonus: 0.005, multiplier: 1.50, level: 0 },
+    { id: "m3", name: "Скорость майнинга III",basePrice: 50,   bonus: 0.03,  multiplier: 1.60, level: 0 },
+    { id: "m4", name: "Скорость майнинга IV", basePrice: 250,  bonus: 0.15,  multiplier: 1.70, level: 0 },
+    { id: "m5", name: "Скорость майнинга V",  basePrice: 1000, bonus: 0.65,  multiplier: 1.70, level: 0 }
+];
+
+const energyUpgrades = [
+    { id: "e1", name: "Реген энергии",      basePrice: 20, bonus: 1,   multiplier: 3.00, level: 0, type: "regen" },
+    { id: "e2", name: "Максимум энергии",   basePrice: 10, bonus: 500, multiplier: 3.00, level: 0, type: "max" }
+];
+
+// ==================== ЗВУКИ (5 экземпляров) ====================
+const clickSounds = [];
+for (let i = 0; i < 5; i++) {
+    const audio = new Audio('clicking.wav');
+    audio.volume = 0.6;
+    clickSounds.push(audio);
+}
+let currentSoundIndex = 0;
+
+// ==================== ФУНКЦИИ ====================
+function formatBalance(num) {
+    return num.toFixed(3).replace(/\.?0+$/, '');
+}
+
+function formatClick(num) {
+    return num.toFixed(2);
+}
+
+function playClickSound() {
+    const sound = clickSounds[currentSoundIndex];
+    sound.currentTime = 0;
+    sound.play().catch(() => {});
+    currentSoundIndex = (currentSoundIndex + 1) % 5;
+}
+
+function createFloatingText(value, x, y) {
+    const float = document.createElement('div');
+    float.textContent = `+${formatClick(value)}`;
+    float.style.position = 'absolute';
+    float.style.left = `${x}px`;
+    float.style.top = `${y}px`;
+    float.style.fontSize = '22px';
+    float.style.fontWeight = 'bold';
+    float.style.color = '#ffeb3b';
+    float.style.textShadow = '2px 2px 4px #000';
+    float.style.pointerEvents = 'none';
+    float.style.zIndex = '100';
+    float.style.transition = 'all 1.2s ease-out';
+    document.body.appendChild(float);
+
+    setTimeout(() => {
+        float.style.transform = `translateY(-80px)`;
+        float.style.opacity = '0';
+    }, 10);
+
+    setTimeout(() => float.remove(), 1500);
+}
+
+function clickChip(e) {
+    if (currentEnergy < ENERGY_COST_PER_CLICK) return;
+
+    const gain = clickPower;
+    balance += gain;
+    currentEnergy -= ENERGY_COST_PER_CLICK;
+
+    // Анимация + текст
+    const rect = e.target.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+    createFloatingText(gain, rect.left + clickX, rect.top + clickY);
+
+    playClickSound();
+    updateUI();
+}
+
+function buyUpgrade(upgrade, category) {
+    const currentPrice = upgrade.basePrice * Math.pow(upgrade.multiplier, upgrade.level);
     
-    const miningUpgrades = [
-        { baseCost: 1, baseIncome: 0.001, multiplier: 1.5, name: "Ферма из GPU", desc: "+0.001/сек" },
-        { baseCost: 17, baseIncome: 0.02, multiplier: 1.5, name: "ASIC-майнер", desc: "+0.02/сек" },
-        { baseCost: 50, baseIncome: 0.06, multiplier: 1.6, name: "Майнинг-пул", desc: "+0.06/сек" },
-        { baseCost: 120, baseIncome: 0.15, multiplier: 1.7, name: "ЦОД", desc: "+0.15/сек" },
-        { baseCost: 250, baseIncome: 0.35, multiplier: 1.7, name: "Квантовый чип", desc: "+0.35/сек" }
-    ];
-    
-    const energyUpgrades = [
-        { baseCost: 10, baseRegen: 1, multiplier: 3, name: "Турбо-кулер", desc: "+1 реген/сек", type: "regen" },
-        { baseCost: 20, baseMax: 500, multiplier: 3, name: "ИБП", desc: "+500 к макс. энергии", type: "max" }
-    ];
+    if (balance < currentPrice) return;
 
-    // === ПЕРЕМЕННЫЕ ===
-    let score = 0;
-    let powerLevels = [0,0,0,0,0];
-    let miningLevels = [0,0,0,0,0];
-    let energyLevels = [0,0];
-    let currentPower = 0.001;
-    let currentIncome = 0;
-    let maxEnergy = 500;
-    let currentEnergy = 500;
-    let energyRegen = 5;
-    let soundIndex = 0;
+    balance -= currentPrice;
+    upgrade.level++;
 
-        // === Telegram WebApp + CloudStorage (надёжное сохранение для каждого игрока) ===
-    let webApp = window.Telegram?.WebApp;
-    if (webApp) {
-        webApp.ready();
-        webApp.expand();
-        console.log("✅ Telegram WebApp готов");
+    // Применяем бонус
+    if (category === 'power') {
+        clickPower += upgrade.bonus;
+    } else if (category === 'mining') {
+        passiveMining += upgrade.bonus;
+    } else if (category === 'energy') {
+        if (upgrade.type === 'regen') energyRegen += upgrade.bonus;
+        if (upgrade.type === 'max') maxEnergy += upgrade.bonus;
     }
 
-    // === СОХРАНЕНИЕ ===
-    function saveGame() {
-        const gameData = JSON.stringify({
-            score: score,
-            powerLevels: powerLevels,
-            miningLevels: miningLevels,
-            energyLevels: energyLevels,
-            currentEnergy: currentEnergy
-        });
+    updateUI();
+    renderShop();
+}
 
-        // Всегда сохраняем в localStorage (резерв)
-        localStorage.setItem("mining_game_data", gameData);
+function getCurrentPrice(upgrade) {
+    return upgrade.basePrice * Math.pow(upgrade.multiplier, upgrade.level);
+}
 
-        // Основное сохранение — в Telegram CloudStorage
-        if (webApp && webApp.CloudStorage) {
-            webApp.CloudStorage.setItem("mining_game_data", gameData, (error) => {
-                if (error) {
-                    console.error("❌ CloudStorage ошибка:", error);
-                } else {
-                    console.log("✅ Сохранено в Telegram CloudStorage");
-                }
-            });
-        }
+function renderShop() {
+    // Power
+    let htmlPower = '';
+    powerUpgrades.forEach(up => {
+        const price = getCurrentPrice(up);
+        htmlPower += `
+            <div class="upgrade-item" onclick="buyUpgrade(powerUpgrades[${powerUpgrades.indexOf(up)}], 'power')">
+                <div class="upgrade-info">
+                    <div class="upgrade-name">${up.name}</div>
+                    <div class="upgrade-desc">+${up.bonus} к мощности клика</div>
+                    <div class="upgrade-level">Уровень: ${up.level}</div>
+                </div>
+                <div class="upgrade-stats">
+                    <div class="upgrade-price">${formatBalance(price)}</div>
+                </div>
+            </div>`;
+    });
+    document.getElementById('powerUpgrades').innerHTML = htmlPower;
+
+    // Mining
+    let htmlMining = '';
+    miningUpgrades.forEach(up => {
+        const price = getCurrentPrice(up);
+        htmlMining += `
+            <div class="upgrade-item" onclick="buyUpgrade(miningUpgrades[${miningUpgrades.indexOf(up)}], 'mining')">
+                <div class="upgrade-info">
+                    <div class="upgrade-name">${up.name}</div>
+                    <div class="upgrade-desc">+${up.bonus} энергии/сек</div>
+                    <div class="upgrade-level">Уровень: ${up.level}</div>
+                </div>
+                <div class="upgrade-stats">
+                    <div class="upgrade-price">${formatBalance(price)}</div>
+                </div>
+            </div>`;
+    });
+    document.getElementById('miningUpgrades').innerHTML = htmlMining;
+
+    // Energy
+    let htmlEnergy = '';
+    energyUpgrades.forEach(up => {
+        const price = getCurrentPrice(up);
+        const desc = up.type === 'regen' ? `+\( {up.bonus} к регену` : `+ \){up.bonus} к максимуму`;
+        htmlEnergy += `
+            <div class="upgrade-item" onclick="buyUpgrade(energyUpgrades[${energyUpgrades.indexOf(up)}], 'energy')">
+                <div class="upgrade-info">
+                    <div class="upgrade-name">${up.name}</div>
+                    <div class="upgrade-desc">${desc}</div>
+                    <div class="upgrade-level">Уровень: ${up.level}</div>
+                </div>
+                <div class="upgrade-stats">
+                    <div class="upgrade-price">${formatBalance(price)}</div>
+                </div>
+            </div>`;
+    });
+    document.getElementById('energyUpgrades').innerHTML = htmlEnergy;
+}
+
+// ==================== ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ====================
+function updateUI() {
+    document.getElementById('score').textContent = formatBalance(balance);
+
+    const percent = Math.min(100, (currentEnergy / maxEnergy) * 100);
+    document.getElementById('energyFill').style.width = percent + '%';
+    document.getElementById('energyText').textContent = `${formatBalance(currentEnergy)} / ${Math.floor(maxEnergy)}`;
+}
+
+// ==================== ПАССИВНЫЙ ДОХОД И РЕГЕН ====================
+setInterval(() => {
+    if (passiveMining > 0) {
+        balance += passiveMining / 10;   // 10 раз в секунду для плавности
     }
 
-    // === ЗАГРУЗКА ===
-    function loadGame() {
-        if (webApp && webApp.CloudStorage) {
-            webApp.CloudStorage.getItem("mining_game_data", (error, value) => {
-                if (error || !value) {
-                    console.log("🌐 CloudStorage пуст → localStorage");
-                    loadFromLocalStorage();
-                } else {
-                    try {
-                        const data = JSON.parse(value);
-                        score = data.score || 0;
-                        powerLevels = data.powerLevels || [0,0,0,0,0];
-                        miningLevels = data.miningLevels || [0,0,0,0,0];
-                        energyLevels = data.energyLevels || [0,0];
-                        currentEnergy = data.currentEnergy || 500;
-                        console.log("✅ Загружено из Telegram CloudStorage");
-                    } catch (e) {
-                        loadFromLocalStorage();
-                    }
-                }
-                recalcStats();
-                updateUI();
-                renderShop();
-            });
-        } else {
-            loadFromLocalStorage();
-        }
-    }
-
-    function loadFromLocalStorage() {
-        let saved = localStorage.getItem("mining_game_data");
-        if (saved) {
-            try {
-                let data = JSON.parse(saved);
-                score = data.score || 0;
-                powerLevels = data.powerLevels || [0,0,0,0,0];
-                miningLevels = data.miningLevels || [0,0,0,0,0];
-                energyLevels = data.energyLevels || [0,0];
-                currentEnergy = data.currentEnergy || 500;
-            } catch(e) {
-                startNewGame();
-            }
-        } else {
-            startNewGame();
-        }
-        recalcStats();
-        updateUI();
-        renderShop();
-    }
-
-    function startNewGame() {
-        score = 0;
-        powerLevels = [0,0,0,0,0];
-        miningLevels = [0,0,0,0,0];
-        energyLevels = [0,0];
-        currentEnergy = 500;
-    }
- 
-    // === РАСЧЁТ СТАТОВ ===
-    function recalcStats() {
-        let powerBonus = 0;
-        for(let i = 0; i < powerLevels.length; i++) {
-            powerBonus += powerLevels[i] * powerUpgrades[i].basePower;
-        }
-        currentPower = 0.001 + powerBonus;
-        
-        let incomeBonus = 0;
-        for(let i = 0; i < miningLevels.length; i++) {
-            incomeBonus += miningLevels[i] * miningUpgrades[i].baseIncome;
-        }
-        currentIncome = incomeBonus;
-        
-        maxEnergy = 500 + (energyLevels[1] * energyUpgrades[1].baseMax);
-        energyRegen = 5 + (energyLevels[0] * energyUpgrades[0].baseRegen);
+    if (currentEnergy < maxEnergy) {
+        currentEnergy += energyRegen / 10;
         if (currentEnergy > maxEnergy) currentEnergy = maxEnergy;
     }
-    
-    function updateUI() {
-        let scoreElem = document.getElementById('score');
-        if (scoreElem) scoreElem.innerText = score.toFixed(4);
-        let percent = (currentEnergy / maxEnergy) * 100;
-        let fillElem = document.getElementById('energyFill');
-        if (fillElem) fillElem.style.width = Math.min(100, percent) + '%';
-        let textElem = document.getElementById('energyText');
-        if (textElem) textElem.innerText = Math.floor(currentEnergy) + ' / ' + Math.floor(maxEnergy);
-    }
-    
-    function renderShop() {
-        let powerContainer = document.getElementById('powerUpgrades');
-        if (!powerContainer) return;
-        powerContainer.innerHTML = '';
-        for(let i = 0; i < powerUpgrades.length; i++) {
-            let up = powerUpgrades[i];
-            let lvl = powerLevels[i];
-            let cost = up.baseCost * Math.pow(up.multiplier, lvl);
-            let powerBonus = (lvl * up.basePower).toFixed(3);
-            powerContainer.innerHTML += `<div class="upgrade-item" onclick="buyPower(${i})">
-                <div class="upgrade-info"><div class="upgrade-name">${up.name} lv.${lvl}</div><div class="upgrade-desc">${up.desc}</div></div>
-                <div class="upgrade-stats"><div class="upgrade-price">💰 ${cost.toFixed(2)}</div><div class="upgrade-level">⚡ +${powerBonus}</div></div>
-            </div>`;
-        }
-        
-        let miningContainer = document.getElementById('miningUpgrades');
-        if (miningContainer) {
-            miningContainer.innerHTML = '';
-            for(let i = 0; i < miningUpgrades.length; i++) {
-                let up = miningUpgrades[i];
-                let lvl = miningLevels[i];
-                let cost = up.baseCost * Math.pow(up.multiplier, lvl);
-                let incomeBonus = (lvl * up.baseIncome).toFixed(3);
-                miningContainer.innerHTML += `<div class="upgrade-item" onclick="buyMining(${i})">
-                    <div class="upgrade-info"><div class="upgrade-name">${up.name} lv.${lvl}</div><div class="upgrade-desc">${up.desc}</div></div>
-                    <div class="upgrade-stats"><div class="upgrade-price">💰 ${cost.toFixed(2)}</div><div class="upgrade-level">⛏️ +${incomeBonus}/сек</div></div>
-                </div>`;
-            }
-        }
-        
-        let energyContainer = document.getElementById('energyUpgrades');
-        if (energyContainer) {
-            energyContainer.innerHTML = '';
-            for(let i = 0; i < energyUpgrades.length; i++) {
-                let up = energyUpgrades[i];
-                let lvl = energyLevels[i];
-                let cost = up.baseCost * Math.pow(up.multiplier, lvl);
-                let bonus = up.type === 'regen' ? `+${(lvl * up.baseRegen).toFixed(1)}/сек` : `+${(lvl * up.baseMax)} макс.`;
-                energyContainer.innerHTML += `<div class="upgrade-item" onclick="buyEnergy(${i})">
-                    <div class="upgrade-info"><div class="upgrade-name">${up.name} lv.${lvl}</div><div class="upgrade-desc">${up.desc}</div></div>
-                    <div class="upgrade-stats"><div class="upgrade-price">💰 ${cost.toFixed(2)}</div><div class="upgrade-level">⚡ ${bonus}</div></div>
-                </div>`;
-            }
-        }
-    }
-    
-    function buyPower(idx) {
-        let lvl = powerLevels[idx];
-        let cost = powerUpgrades[idx].baseCost * Math.pow(powerUpgrades[idx].multiplier, lvl);
-        if (score >= cost) {
-            score -= cost;
-            powerLevels[idx]++;
-            recalcStats();
-            saveGame();
-            updateUI();
-            renderShop();
-            vibrate(50);
-            playClickSound();
-        } else vibrate(100);
-    }
-    
-    function buyMining(idx) {
-        let lvl = miningLevels[idx];
-        let cost = miningUpgrades[idx].baseCost * Math.pow(miningUpgrades[idx].multiplier, lvl);
-        if (score >= cost) {
-            score -= cost;
-            miningLevels[idx]++;
-            recalcStats();
-            saveGame();
-            updateUI();
-            renderShop();
-            vibrate(50);
-            playClickSound();
-        } else vibrate(100);
-    }
-    
-    function buyEnergy(idx) {
-        let lvl = energyLevels[idx];
-        let cost = energyUpgrades[idx].baseCost * Math.pow(energyUpgrades[idx].multiplier, lvl);
-        if (score >= cost) {
-            score -= cost;
-            energyLevels[idx]++;
-            recalcStats();
-            saveGame();
-            updateUI();
-            renderShop();
-            vibrate(50);
-            playClickSound();
-        } else vibrate(100);
-    }
-    
-    function vibrate(d) { if(navigator.vibrate) navigator.vibrate(d); }
-    
-    function playClickSound() {
-        let el = document.getElementById('clickSound'+soundIndex);
-        if(el) { el.pause(); el.currentTime=0; el.play().catch(e=>{}); }
-        soundIndex = (soundIndex+1)%5;
-    }
-    
-    function clickChip(event) {
-        if(currentEnergy < 1) { vibrate(50); return; }
-        currentEnergy -= 1;
-        score += currentPower;
-        saveGame();
-        vibrate(15);
-        playClickSound();
-        let img = document.getElementById('cookieImg');
-        if(img) {
-            img.style.transform='scale(0.97)';
-            setTimeout(() => { if(img) img.style.transform=''; }, 80);
-        }
-        let t = document.createElement('div');
-        t.innerText = '+'+currentPower.toFixed(4);
-        t.style.position='fixed';
-        let x = event.touches ? event.touches[0].clientX : event.clientX;
-        let y = event.touches ? event.touches[0].clientY : event.clientY;
-        t.style.left=(x-20)+'px';
-        t.style.top=(y-30)+'px';
-        t.style.fontSize='20px';
-        t.style.fontWeight='bold';
-        t.style.color='#ffaa33';
-        t.style.textShadow='1px 1px 0 #8b4513';
-        t.style.pointerEvents='none';
-        t.style.zIndex='1000';
-        document.body.appendChild(t);
-        setTimeout(() => t.remove(), 500);
-        updateUI();
-    }
-    
-    function showScreen(id) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        let target = document.getElementById(id + 'Screen');
-        if (target) target.classList.add('active');
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        let activeBtn = document.querySelector(`.nav-btn[data-screen="${id}"]`);
-        if (activeBtn) activeBtn.classList.add('active');
-        if (id === 'shop') renderShop();
-    }
-    
-    // === ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК МАГАЗИНА ===
-    document.querySelectorAll('.shop-tab').forEach(tab => {
-        tab.addEventListener('click', function() {
-            document.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active'));
-            this.classList.add('active');
-            let t = this.getAttribute('data-tab');
-            let powerDiv = document.getElementById('powerUpgrades');
-            let miningDiv = document.getElementById('miningUpgrades');
-            let energyDiv = document.getElementById('energyUpgrades');
-            if (powerDiv) powerDiv.style.display = t === 'power' ? 'flex' : 'none';
-            if (miningDiv) miningDiv.style.display = t === 'mining' ? 'flex' : 'none';
-            if (energyDiv) energyDiv.style.display = t === 'energy' ? 'flex' : 'none';
-        });
+
+    updateUI();
+}, 100);
+
+// ==================== ТАБЫ МАГАЗИНА ====================
+document.querySelectorAll('.shop-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        document.getElementById('powerUpgrades').style.display = 'none';
+        document.getElementById('miningUpgrades').style.display = 'none';
+        document.getElementById('energyUpgrades').style.display = 'none';
+
+        if (tab.dataset.tab === 'power') document.getElementById('powerUpgrades').style.display = 'flex';
+        if (tab.dataset.tab === 'mining') document.getElementById('miningUpgrades').style.display = 'flex';
+        if (tab.dataset.tab === 'energy') document.getElementById('energyUpgrades').style.display = 'flex';
     });
-    
-    // === НАВБАР ===
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.addEventListener('click', () => showScreen(btn.getAttribute('data-screen')));
-    });
-    
-    // === АВТОСОХРАНЕНИЕ И ДОХОД ===
-    setInterval(() => {
-        if (currentEnergy < maxEnergy) {
-            currentEnergy = Math.min(currentEnergy + energyRegen, maxEnergy);
-            updateUI();
-        }
-        score += currentIncome;
-        saveGame();
-        updateUI();
-    }, 1000);
-    
-    // === ЗАПУСК ===
-    loadGame();
-    document.body.addEventListener('touchstart', () => {}, { once: true });
+});
+
+// Инициализация
+renderShop();
+updateUI();
+
+// Начальная активация первой вкладки
+document.querySelector('.shop-tab').classList.add('active');
+document.getElementById('powerUpgrades').style.display = 'flex';
             </script>
 </body>
     </html>

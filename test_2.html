@@ -54,8 +54,6 @@
             text-align: center;
             margin-bottom: 20px;
             text-shadow: 2px 2px 0 #5c2e0e, 4px 4px 0 rgba(0,0,0,0.3), 0 0 15px rgba(255,215,0,0.5);
-            background: transparent;
-            padding: 10px 20px;
         }
 
         .cookie-image {
@@ -64,7 +62,6 @@
             cursor: pointer;
             transition: transform 0.05s linear;
             filter: drop-shadow(0 15px 25px rgba(0,0,0,0.3));
-            display: block;
         }
 
         .cookie-image:active {
@@ -169,6 +166,11 @@
             color: #ccc;
         }
 
+        .upgrade-level {
+            font-size: 11px;
+            color: #ffd966;
+        }
+
         .upgrade-stats {
             flex: 1;
             text-align: right;
@@ -181,11 +183,6 @@
             font-weight: bold;
             color: #2c1a0e;
             font-size: 14px;
-        }
-
-        .upgrade-level {
-            font-size: 11px;
-            color: #ffd966;
         }
 
         .navbar {
@@ -225,8 +222,8 @@
 <body>
 
 <div id="mainScreen" class="screen active">
-    <div class="score-display" id="score">0</div>
-    <img src="cookie.png" alt="Процессор" class="cookie-image" id="cookieImg" onclick="clickChip(event)">
+    <div class="score-display" id="score">0.000</div>
+    <img src="cookie.png" alt="Процессор" class="cookie-image" id="cookieImg">
     <div class="energy-bar-container">
         <div class="energy-bar-fill" id="energyFill"></div>
         <div class="energy-text" id="energyText">0 / 500</div>
@@ -235,9 +232,9 @@
 
 <div id="shopScreen" class="screen">
     <div class="shop-tabs">
-        <div class="shop-tab" data-tab="power">💪 Мощность</div>
-        <div class="shop-tab" data-tab="mining">⛏️ Майнинг</div>
-        <div class="shop-tab" data-tab="energy">⚡ Выносливость</div>
+        <div class="shop-tab active" data-tab="power">Мощность</div>
+        <div class="shop-tab" data-tab="mining">Майнинг</div>
+        <div class="shop-tab" data-tab="energy">Выносливость</div>
     </div>
     <div id="powerUpgrades" class="upgrades-list"></div>
     <div id="miningUpgrades" class="upgrades-list" style="display:none;"></div>
@@ -245,31 +242,30 @@
 </div>
 
 <div id="ratingScreen" class="screen">
-    <div class="coming-soon">🏆 Рейтинг<br><span style="font-size:16px;">В разработке</span></div>
+    <div class="coming-soon">Рейтинг<br><span style="font-size:16px;">В разработке</span></div>
 </div>
 
 <div class="navbar">
-    <button class="nav-btn" data-screen="main">🏠 Главная</button>
-    <button class="nav-btn" data-screen="shop">🛒 Магазин</button>
-    <button class="nav-btn" data-screen="rating">🏆 Рейтинг</button>
+    <button class="nav-btn active" data-screen="main">Главная</button>
+    <button class="nav-btn" data-screen="shop">Магазин</button>
+    <button class="nav-btn" data-screen="rating">Рейтинг</button>
 </div>
 
-<audio id="clickSound0" preload="auto"><source src="clicking.wav" type="audio/wav"></audio>
-<audio id="clickSound1" preload="auto"><source src="clicking.wav" type="audio/wav"></audio>
-<audio id="clickSound2" preload="auto"><source src="clicking.wav" type="audio/wav"></audio>
-<audio id="clickSound3" preload="auto"><source src="clicking.wav" type="audio/wav"></audio>
-<audio id="clickSound4" preload="auto"><source src="clicking.wav" type="audio/wav"></audio>
-
 <script>
-// ==================== ОСНОВНЫЕ ПЕРЕМЕННЫЕ ====================
-let balance = 0;                    // текущий баланс (отображается с .000)
-let clickPower = 0.01;              // базовая мощность одного клика
-let passiveMining = 0;              // пассивный доход в секунду
+// ==================== Telegram WebApp ====================
+const tg = window.Telegram.WebApp || {};
+tg.ready && tg.ready();
+tg.expand && tg.expand();
+
+// ==================== ПЕРЕМЕННЫЕ ИГРЫ ====================
+let balance = 0;
+let clickPower = 0.01;
+let passiveMining = 0;
 let maxEnergy = 500;
 let currentEnergy = 500;
-let energyRegen = 5;                // энергия в секунду
+let energyRegen = 5;
 
-const ENERGY_COST_PER_CLICK = 1;    // сколько энергии тратится за клик (можно потом изменить)
+const ENERGY_COST_PER_CLICK = 1;
 
 // ==================== УЛУЧШЕНИЯ ====================
 const powerUpgrades = [
@@ -293,54 +289,52 @@ const energyUpgrades = [
     { id: "e2", name: "Максимум энергии",   basePrice: 10, bonus: 500, multiplier: 3.00, level: 0, type: "max" }
 ];
 
-// ==================== ЗВУКИ (5 экземпляров) ====================
+// ==================== ЗВУКИ (5 штук) ====================
 const clickSounds = [];
 for (let i = 0; i < 5; i++) {
     const audio = new Audio('clicking.wav');
-    audio.volume = 0.6;
+    audio.volume = 0.65;
     clickSounds.push(audio);
 }
-let currentSoundIndex = 0;
+let soundIndex = 0;
 
-// ==================== ФУНКЦИИ ====================
+function playClickSound() {
+    const sound = clickSounds[soundIndex];
+    sound.currentTime = 0;
+    sound.play().catch(() => {});
+    soundIndex = (soundIndex + 1) % 5;
+}
+
+// ==================== ФОРМАТИРОВАНИЕ ====================
 function formatBalance(num) {
-    return num.toFixed(3).replace(/\.?0+$/, '');
+    return Number(num).toFixed(3);
 }
 
 function formatClick(num) {
-    return num.toFixed(2);
+    return Number(num).toFixed(2);
 }
 
-function playClickSound() {
-    const sound = clickSounds[currentSoundIndex];
-    sound.currentTime = 0;
-    sound.play().catch(() => {});
-    currentSoundIndex = (currentSoundIndex + 1) % 5;
-}
-
+// ==================== ПЛАВАЮЩИЙ ТЕКСТ ====================
 function createFloatingText(value, x, y) {
     const float = document.createElement('div');
     float.textContent = `+${formatClick(value)}`;
-    float.style.position = 'absolute';
-    float.style.left = `${x}px`;
-    float.style.top = `${y}px`;
-    float.style.fontSize = '22px';
-    float.style.fontWeight = 'bold';
-    float.style.color = '#ffeb3b';
-    float.style.textShadow = '2px 2px 4px #000';
-    float.style.pointerEvents = 'none';
-    float.style.zIndex = '100';
-    float.style.transition = 'all 1.2s ease-out';
+    float.style.cssText = `
+        position: absolute; left: ${x}px; top: ${y}px; 
+        font-size: 24px; font-weight: bold; color: #ffeb3b; 
+        text-shadow: 2px 2px 4px #000; pointer-events: none; 
+        z-index: 100; transition: all 1.2s ease-out;
+    `;
     document.body.appendChild(float);
 
     setTimeout(() => {
-        float.style.transform = `translateY(-80px)`;
+        float.style.transform = 'translateY(-90px)';
         float.style.opacity = '0';
     }, 10);
 
-    setTimeout(() => float.remove(), 1500);
+    setTimeout(() => float.remove(), 1400);
 }
 
+// ==================== КЛИК ====================
 function clickChip(e) {
     if (currentEnergy < ENERGY_COST_PER_CLICK) return;
 
@@ -348,52 +342,47 @@ function clickChip(e) {
     balance += gain;
     currentEnergy -= ENERGY_COST_PER_CLICK;
 
-    // Анимация + текст
-    const rect = e.target.getBoundingClientRect();
+    const rect = e.currentTarget.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
-    createFloatingText(gain, rect.left + clickX, rect.top + clickY);
 
+    createFloatingText(gain, rect.left + clickX, rect.top + clickY);
     playClickSound();
     updateUI();
 }
 
-function buyUpgrade(upgrade, category) {
-    const currentPrice = upgrade.basePrice * Math.pow(upgrade.multiplier, upgrade.level);
-    
-    if (balance < currentPrice) return;
+// ==================== ПОКУПКА УЛУЧШЕНИЯ ====================
+function buyUpgrade(upgradeArray, index, category) {
+    const upgrade = upgradeArray[index];
+    const price = upgrade.basePrice * Math.pow(upgrade.multiplier, upgrade.level);
 
-    balance -= currentPrice;
+    if (balance < price) return;
+
+    balance -= price;
     upgrade.level++;
 
-    // Применяем бонус
-    if (category === 'power') {
-        clickPower += upgrade.bonus;
-    } else if (category === 'mining') {
-        passiveMining += upgrade.bonus;
-    } else if (category === 'energy') {
+    if (category === 'power') clickPower += upgrade.bonus;
+    else if (category === 'mining') passiveMining += upgrade.bonus;
+    else if (category === 'energy') {
         if (upgrade.type === 'regen') energyRegen += upgrade.bonus;
-        if (upgrade.type === 'max') maxEnergy += upgrade.bonus;
+        else if (upgrade.type === 'max') maxEnergy += upgrade.bonus;
     }
 
     updateUI();
     renderShop();
 }
 
-function getCurrentPrice(upgrade) {
-    return upgrade.basePrice * Math.pow(upgrade.multiplier, upgrade.level);
-}
-
+// ==================== ОТРИСОВКА МАГАЗИНА ====================
 function renderShop() {
     // Power
-    let htmlPower = '';
-    powerUpgrades.forEach(up => {
-        const price = getCurrentPrice(up);
-        htmlPower += `
-            <div class="upgrade-item" onclick="buyUpgrade(powerUpgrades[${powerUpgrades.indexOf(up)}], 'power')">
+    let html = '';
+    powerUpgrades.forEach((up, i) => {
+        const price = up.basePrice * Math.pow(up.multiplier, up.level);
+        html += `
+            <div class="upgrade-item" onclick="buyUpgrade(powerUpgrades, ${i}, 'power')">
                 <div class="upgrade-info">
                     <div class="upgrade-name">${up.name}</div>
-                    <div class="upgrade-desc">+${up.bonus} к мощности клика</div>
+                    <div class="upgrade-desc">+${up.bonus} мощности</div>
                     <div class="upgrade-level">Уровень: ${up.level}</div>
                 </div>
                 <div class="upgrade-stats">
@@ -401,14 +390,14 @@ function renderShop() {
                 </div>
             </div>`;
     });
-    document.getElementById('powerUpgrades').innerHTML = htmlPower;
+    document.getElementById('powerUpgrades').innerHTML = html;
 
     // Mining
-    let htmlMining = '';
-    miningUpgrades.forEach(up => {
-        const price = getCurrentPrice(up);
-        htmlMining += `
-            <div class="upgrade-item" onclick="buyUpgrade(miningUpgrades[${miningUpgrades.indexOf(up)}], 'mining')">
+    html = '';
+    miningUpgrades.forEach((up, i) => {
+        const price = up.basePrice * Math.pow(up.multiplier, up.level);
+        html += `
+            <div class="upgrade-item" onclick="buyUpgrade(miningUpgrades, ${i}, 'mining')">
                 <div class="upgrade-info">
                     <div class="upgrade-name">${up.name}</div>
                     <div class="upgrade-desc">+${up.bonus} энергии/сек</div>
@@ -419,15 +408,15 @@ function renderShop() {
                 </div>
             </div>`;
     });
-    document.getElementById('miningUpgrades').innerHTML = htmlMining;
+    document.getElementById('miningUpgrades').innerHTML = html;
 
     // Energy
-    let htmlEnergy = '';
-    energyUpgrades.forEach(up => {
-        const price = getCurrentPrice(up);
-        const desc = up.type === 'regen' ? `+\( {up.bonus} к регену` : `+ \){up.bonus} к максимуму`;
-        htmlEnergy += `
-            <div class="upgrade-item" onclick="buyUpgrade(energyUpgrades[${energyUpgrades.indexOf(up)}], 'energy')">
+    html = '';
+    energyUpgrades.forEach((up, i) => {
+        const price = up.basePrice * Math.pow(up.multiplier, up.level);
+        const desc = up.type === 'regen' ? `+\( {up.bonus} реген` : `+ \){up.bonus} макс. энергии`;
+        html += `
+            <div class="upgrade-item" onclick="buyUpgrade(energyUpgrades, ${i}, 'energy')">
                 <div class="upgrade-info">
                     <div class="upgrade-name">${up.name}</div>
                     <div class="upgrade-desc">${desc}</div>
@@ -438,10 +427,10 @@ function renderShop() {
                 </div>
             </div>`;
     });
-    document.getElementById('energyUpgrades').innerHTML = htmlEnergy;
+    document.getElementById('energyUpgrades').innerHTML = html;
 }
 
-// ==================== ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ====================
+// ==================== ОБНОВЛЕНИЕ UI ====================
 function updateUI() {
     document.getElementById('score').textContent = formatBalance(balance);
 
@@ -450,21 +439,107 @@ function updateUI() {
     document.getElementById('energyText').textContent = `${formatBalance(currentEnergy)} / ${Math.floor(maxEnergy)}`;
 }
 
-// ==================== ПАССИВНЫЙ ДОХОД И РЕГЕН ====================
-setInterval(() => {
-    if (passiveMining > 0) {
-        balance += passiveMining / 10;   // 10 раз в секунду для плавности
+// ==================== СОХРАНЕНИЕ И ЗАГРУЗКА ====================
+async function saveProgress() {
+    const saveData = {
+        balance,
+        clickPower,
+        passiveMining,
+        maxEnergy,
+        energyRegen,
+        currentEnergy,
+        powerUpgrades: powerUpgrades.map(u => ({id: u.id, level: u.level})),
+        miningUpgrades: miningUpgrades.map(u => ({id: u.id, level: u.level})),
+        energyUpgrades: energyUpgrades.map(u => ({id: u.id, level: u.level})),
+        lastSave: Date.now()
+    };
+
+    try {
+        if (tg.CloudStorage) {
+            await tg.CloudStorage.setItem('clickerSave_v2', JSON.stringify(saveData));
+        } else {
+            localStorage.setItem('clickerSave_v2', JSON.stringify(saveData));
+        }
+    } catch (e) {
+        localStorage.setItem('clickerSave_v2', JSON.stringify(saveData));
+    }
+}
+
+async function loadProgress() {
+    let data = null;
+
+    try {
+        if (tg.CloudStorage) {
+            const saved = await tg.CloudStorage.getItem('clickerSave_v2');
+            if (saved) data = JSON.parse(saved);
+        }
+    } catch (e) {}
+
+    if (!data) {
+        const local = localStorage.getItem('clickerSave_v2');
+        if (local) data = JSON.parse(local);
     }
 
-    if (currentEnergy < maxEnergy) {
-        currentEnergy += energyRegen / 10;
-        if (currentEnergy > maxEnergy) currentEnergy = maxEnergy;
+    if (data) {
+        balance = data.balance || 0;
+        clickPower = data.clickPower || 0.01;
+        passiveMining = data.passiveMining || 0;
+        maxEnergy = data.maxEnergy || 500;
+        energyRegen = data.energyRegen || 5;
+        currentEnergy = Math.min(data.currentEnergy || maxEnergy, maxEnergy);
+
+        // Загружаем уровни
+        if (data.powerUpgrades) data.powerUpgrades.forEach(s => {
+            const u = powerUpgrades.find(x => x.id === s.id);
+            if (u) u.level = s.level || 0;
+        });
+        if (data.miningUpgrades) data.miningUpgrades.forEach(s => {
+            const u = miningUpgrades.find(x => x.id === s.id);
+            if (u) u.level = s.level || 0;
+        });
+        if (data.energyUpgrades) data.energyUpgrades.forEach(s => {
+            const u = energyUpgrades.find(x => x.id === s.id);
+            if (u) u.level = s.level || 0;
+        });
     }
 
     updateUI();
+    renderShop();
+}
+
+// ==================== ПАССИВНЫЙ ДОХОД ====================
+setInterval(() => {
+    balance += passiveMining / 10;           // плавный прирост
+    if (currentEnergy < maxEnergy) {
+        currentEnergy = Math.min(maxEnergy, currentEnergy + energyRegen / 10);
+    }
+    updateUI();
 }, 100);
 
-// ==================== ТАБЫ МАГАЗИНА ====================
+// Автосохранение
+setInterval(saveProgress, 10000); // каждые 10 секунд
+
+// Сохранение при закрытии/сворачивании
+if (tg.onEvent) {
+    tg.onEvent('deactivated', saveProgress);
+    tg.onEvent('visibilityChanged', (isVisible) => {
+        if (!isVisible) saveProgress();
+    });
+}
+
+// ==================== НАВИГАЦИЯ ====================
+document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+
+        const screenId = btn.dataset.screen + 'Screen';
+        document.getElementById(screenId).classList.add('active');
+        btn.classList.add('active');
+    });
+});
+
+// ==================== ТАБЫ В МАГАЗИНЕ ====================
 document.querySelectorAll('.shop-tab').forEach(tab => {
     tab.addEventListener('click', () => {
         document.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active'));
@@ -480,13 +555,14 @@ document.querySelectorAll('.shop-tab').forEach(tab => {
     });
 });
 
-// Инициализация
-renderShop();
-updateUI();
+// ==================== ЗАПУСК ====================
+document.getElementById('cookieImg').addEventListener('click', clickChip);
 
-// Начальная активация первой вкладки
-document.querySelector('.shop-tab').classList.add('active');
-document.getElementById('powerUpgrades').style.display = 'flex';
-            </script>
+window.addEventListener('load', async () => {
+    await loadProgress();
+    renderShop();
+    updateUI();
+});
+</script>
 </body>
-    </html>
+</html>

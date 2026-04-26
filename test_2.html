@@ -4,7 +4,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Майнинг кликер</title>
     <style>
-        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+        * { margin:0; padding:0; box-sizing:border-box; user-select:none; -webkit-tap-highlight-color:transparent; }
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
             background: url('bg.png') center/cover no-repeat fixed;
@@ -18,30 +18,123 @@
         .screen.active { display: flex; }
         #mainScreen { justify-content: center; }
 
-        .score-display { font-size: 48px; font-weight: 900; color: #ffeedd; text-shadow: 2px 2px 0 #5c2e0e, 4px 4px 0 rgba(0,0,0,0.3), 0 0 15px rgba(255,215,0,0.5); margin-bottom: 20px; }
-        .cookie-image { width: 75%; max-width: 300px; cursor: pointer; transition: transform 0.05s linear; filter: drop-shadow(0 15px 25px rgba(0,0,0,0.3)); }
+        .score-display { 
+            font-size: 48px; 
+            font-weight: 900; 
+            color: #ffeedd; 
+            text-shadow: 2px 2px 0 #5c2e0e, 4px 4px 0 rgba(0,0,0,0.3), 0 0 15px rgba(255,215,0,0.5); 
+            margin-bottom: 20px; 
+        }
+        .cookie-image { 
+            width: 75%; 
+            max-width: 300px; 
+            cursor: pointer; 
+            transition: transform 0.05s linear; 
+            filter: drop-shadow(0 15px 25px rgba(0,0,0,0.3)); 
+        }
         .cookie-image:active { transform: scale(0.97); }
 
-        .energy-bar-container { width: 85%; max-width: 350px; height: 30px; background: rgba(60,60,80,0.7); border-radius: 30px; margin: 20px auto 10px; position: relative; overflow: hidden; border: 1px solid rgba(255,215,0,0.5); }
-        .energy-bar-fill { height: 100%; background: linear-gradient(90deg, #ffd966, #ffaa33); border-radius: 30px; transition: width 0.2s ease-out; }
-        .energy-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 14px; font-weight: bold; color: white; text-shadow: 1px 1px 2px #000; }
+        .energy-bar-container { 
+            width: 85%; 
+            max-width: 350px; 
+            height: 30px; 
+            background: rgba(60,60,80,0.7); 
+            border-radius: 30px; 
+            margin: 20px auto 10px; 
+            position: relative; 
+            overflow: hidden; 
+            border: 1px solid rgba(255,215,0,0.5); 
+        }
+        .energy-bar-fill { 
+            height: 100%; 
+            background: linear-gradient(90deg, #ffd966, #ffaa33); 
+            border-radius: 30px; 
+            transition: width 0.2s ease-out; 
+        }
+        .energy-text { 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            font-size: 14px; 
+            font-weight: bold; 
+            color: white; 
+            text-shadow: 1px 1px 2px #000; 
+        }
 
-        .shop-tabs { display: flex; width: 100%; gap: 8px; margin-bottom: 15px; background: rgba(0,0,0,0.3); border-radius: 40px; padding: 5px; }
-        .shop-tab { flex: 1; text-align: center; padding: 10px 0; background: rgba(255,245,215,0.5); border-radius: 35px; cursor: pointer; font-weight: bold; }
-        .shop-tab.active { background: rgba(255, 200, 50, 0.9); color: #5c2e0e; }
+        .shop-tabs { 
+            display: flex; 
+            width: 100%; 
+            gap: 8px; 
+            margin-bottom: 15px; 
+            background: rgba(0,0,0,0.3); 
+            border-radius: 40px; 
+            padding: 5px; 
+        }
+        .shop-tab { 
+            flex: 1; 
+            text-align: center; 
+            padding: 10px 0; 
+            background: rgba(255,245,215,0.5); 
+            border-radius: 35px; 
+            cursor: pointer; 
+            font-weight: bold; 
+        }
+        .shop-tab.active { 
+            background: rgba(255, 200, 50, 0.9); 
+            color: #5c2e0e; 
+        }
 
-        .upgrades-list { width: 100%; display: none; flex-direction: column; gap: 12px; }
+        .upgrades-list { 
+            width: 100%; 
+            display: none; 
+            flex-direction: column; 
+            gap: 12px; 
+        }
         .upgrades-list.active { display: flex; }
 
-        .upgrade-item { background: rgba(30,30,40,0.85); border-radius: 20px; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #ffd966; cursor: pointer; }
+        .upgrade-item { 
+            background: rgba(30,30,40,0.85); 
+            border-radius: 20px; 
+            padding: 12px 15px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-left: 5px solid #ffd966; 
+            cursor: pointer; 
+        }
         .upgrade-item:active { transform: scale(0.97); }
         .upgrade-name { font-weight: bold; color: #ffd966; }
         .upgrade-desc, .upgrade-level { font-size: 13px; color: #ddd; }
-        .upgrade-price { background: #ffaa33; color: #2c1a0e; padding: 6px 12px; border-radius: 20px; font-weight: bold; }
+        .upgrade-price { 
+            background: #ffaa33; 
+            color: #2c1a0e; 
+            padding: 6px 12px; 
+            border-radius: 20px; 
+            font-weight: bold; 
+        }
 
-        .navbar { display: flex; background: rgba(255, 200, 50, 0.85); padding: 12px 10px; border-radius: 35px 35px 0 0; }
-        .nav-btn { flex: 1; background: none; border: none; color: white; font-size: 18px; font-weight: bold; padding: 10px; border-radius: 30px; cursor: pointer; }
-        .nav-btn.active { background: #ffd966; color: #5c2e0e; }
+        .navbar { 
+            display: flex; 
+            background: rgba(255, 200, 50, 0.85); 
+            padding: 12px 10px; 
+            border-radius: 35px 35px 0 0; 
+        }
+        .nav-btn { 
+            flex: 1; 
+            background: none; 
+            border: none; 
+            color: white; 
+            font-size: 18px; 
+            font-weight: bold; 
+            padding: 10px; 
+            border-radius: 30px; 
+            cursor: pointer; 
+        }
+        .nav-btn.active { 
+            background: #ffd966; 
+            color: #5c2e0e; 
+        }
     </style>
 </head>
 <body>
@@ -87,7 +180,7 @@ let energyRegen = 5;
 
 const ENERGY_COST_PER_CLICK = 1;
 
-// Улучшения (твои точные данные)
+// Улучшения
 const powerUpgrades = [
     { id: "p1", name: "Мощность клика I",  basePrice: 0.5,  bonus: 0.001, multiplier: 1.40, level: 0 },
     { id: "p2", name: "Мощность клика II", basePrice: 2,    bonus: 0.005, multiplier: 1.40, level: 0 },
@@ -109,19 +202,19 @@ const energyUpgrades = [
     { id: "e2", name: "Максимум энергии",   basePrice: 10, bonus: 500, multiplier: 3.00, level: 0, type: "max" }
 ];
 
-// Звуки (5 штук для наложения)
+// Звуки
 const clickSounds = [];
 for (let i = 0; i < 5; i++) {
-    const audio = new Audio('clicking.wav');
-    audio.volume = 0.6;
-    clickSounds.push(audio);
+    const a = new Audio('clicking.wav');
+    a.volume = 0.6;
+    clickSounds.push(a);
 }
 let soundIndex = 0;
 
 function playClickSound() {
-    const sound = clickSounds[soundIndex];
-    sound.currentTime = 0;
-    sound.play().catch(() => {});
+    const s = clickSounds[soundIndex];
+    s.currentTime = 0;
+    s.play().catch(() => {});
     soundIndex = (soundIndex + 1) % 5;
 }
 
@@ -129,17 +222,32 @@ function playClickSound() {
 function formatBalance(n) { return Number(n).toFixed(3); }
 function formatClick(n) { return Number(n).toFixed(2); }
 
-// Плавающий текст
-function createFloatingText(value, x, y) {
+// Плавающий текст (исправлено положение)
+function createFloatingText(value, clientX, clientY) {
     const el = document.createElement('div');
     el.textContent = `+${formatClick(value)}`;
-    el.style.cssText = `position:absolute; left:\( {x}px; top: \){y}px; font-size:26px; font-weight:bold; color:#ffeb3b; text-shadow:2px 2px 4px #000; pointer-events:none; z-index:999; transition:all 1.2s ease-out;`;
+    el.style.cssText = `
+        position: absolute; 
+        left: ${clientX}px; 
+        top: ${clientY - 40}px; 
+        font-size: 26px; 
+        font-weight: bold; 
+        color: #ffeb3b; 
+        text-shadow: 2px 2px 4px #000; 
+        pointer-events: none; 
+        z-index: 999; 
+        transition: all 1.2s ease-out;
+    `;
     document.body.appendChild(el);
-    setTimeout(() => { el.style.transform = 'translateY(-90px)'; el.style.opacity = '0'; }, 10);
+
+    setTimeout(() => {
+        el.style.transform = 'translateY(-90px)';
+        el.style.opacity = '0';
+    }, 10);
     setTimeout(() => el.remove(), 1400);
 }
 
-// Клик по процессору
+// Клик
 document.getElementById('cookieImg').addEventListener('click', (e) => {
     if (currentEnergy < ENERGY_COST_PER_CLICK) return;
 
@@ -147,15 +255,13 @@ document.getElementById('cookieImg').addEventListener('click', (e) => {
     balance += gain;
     currentEnergy -= ENERGY_COST_PER_CLICK;
 
-    const rect = e.currentTarget.getBoundingClientRect();
-    createFloatingText(gain, e.clientX, e.clientY - 40);
-
+    createFloatingText(gain, e.clientX, e.clientY);
     playClickSound();
     updateUI();
 });
 
-// Покупка улучшения
-function buyUpgrade(arr, idx, category) {
+// Покупка
+function buyUpgrade(arr, idx, cat) {
     const up = arr[idx];
     const price = up.basePrice * Math.pow(up.multiplier, up.level);
     if (balance < price) return;
@@ -163,10 +269,10 @@ function buyUpgrade(arr, idx, category) {
     balance -= price;
     up.level++;
 
-    if (category === 'power') clickPower += up.bonus;
-    else if (category === 'mining') passiveMining += up.bonus;
-    else if (category === 'energy') {
-        if (up.type === "regen") energyRegen += up.bonus;
+    if (cat === 'power') clickPower += up.bonus;
+    else if (cat === 'mining') passiveMining += up.bonus;
+    else if (cat === 'energy') {
+        if (up.type === 'regen') energyRegen += up.bonus;
         else maxEnergy += up.bonus;
     }
 
@@ -176,18 +282,16 @@ function buyUpgrade(arr, idx, category) {
 
 // Отрисовка магазина
 function renderShop() {
-    // Мощность
     let html = '';
     powerUpgrades.forEach((up, i) => {
         const price = (up.basePrice * Math.pow(up.multiplier, up.level)).toFixed(3);
         html += `<div class="upgrade-item" onclick="buyUpgrade(powerUpgrades, ${i}, 'power')">
-            <div><div class="upgrade-name">\( {up.name}</div><div class="upgrade-desc">+ \){up.bonus} мощности</div><div class="upgrade-level">Уровень: ${up.level}</div></div>
+            <div><div class="upgrade-name">\( {up.name}</div><div class="upgrade-desc">+ \){up.bonus} к мощности</div><div class="upgrade-level">Уровень: ${up.level}</div></div>
             <div class="upgrade-price">${price}</div>
         </div>`;
     });
     document.getElementById('powerUpgrades').innerHTML = html;
 
-    // Майнинг
     html = '';
     miningUpgrades.forEach((up, i) => {
         const price = (up.basePrice * Math.pow(up.multiplier, up.level)).toFixed(3);
@@ -198,11 +302,10 @@ function renderShop() {
     });
     document.getElementById('miningUpgrades').innerHTML = html;
 
-    // Выносливость
     html = '';
     energyUpgrades.forEach((up, i) => {
         const price = (up.basePrice * Math.pow(up.multiplier, up.level)).toFixed(3);
-        const desc = up.type === 'regen' ? `+\( {up.bonus} реген` : `+ \){up.bonus} макс`;
+        const desc = up.type === 'regen' ? `+\( {up.bonus} к регену` : `+ \){up.bonus} к максимуму`;
         html += `<div class="upgrade-item" onclick="buyUpgrade(energyUpgrades, ${i}, 'energy')">
             <div><div class="upgrade-name">\( {up.name}</div><div class="upgrade-desc"> \){desc}</div><div class="upgrade-level">Уровень: ${up.level}</div></div>
             <div class="upgrade-price">${price}</div>
@@ -211,15 +314,15 @@ function renderShop() {
     document.getElementById('energyUpgrades').innerHTML = html;
 }
 
-// Обновление UI
+// Обновление UI (энергия без лишних дробей)
 function updateUI() {
     document.getElementById('score').textContent = formatBalance(balance);
     const percent = Math.min(100, (currentEnergy / maxEnergy) * 100);
     document.getElementById('energyFill').style.width = percent + '%';
-    document.getElementById('energyText').textContent = `${formatBalance(currentEnergy)} / ${Math.floor(maxEnergy)}`;
+    document.getElementById('energyText').textContent = `${Math.floor(currentEnergy)} / ${Math.floor(maxEnergy)}`;
 }
 
-// Пассивный доход + реген
+// Пассив + реген
 setInterval(() => {
     balance += passiveMining / 10;
     if (currentEnergy < maxEnergy) currentEnergy = Math.min(maxEnergy, currentEnergy + energyRegen / 10);
@@ -236,7 +339,7 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
     });
 });
 
-// Табы в магазине
+// Табы магазина
 document.querySelectorAll('.shop-tab').forEach(tab => {
     tab.addEventListener('click', () => {
         document.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active'));

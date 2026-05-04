@@ -266,31 +266,28 @@
             }
         }
 
-        .debug-banner {
+        .status-banner {
             position: fixed;
             top: 10px;
             right: 10px;
             background: rgba(0,0,0,0.8);
-            color: #0f0;
+            color: white;
             padding: 8px 12px;
             border-radius: 8px;
             font-size: 12px;
             z-index: 1000;
             max-width: 200px;
             text-align: right;
+            border-left: 4px solid #0f0;
         }
 
-        .status-icon {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            margin-right: 4px;
+        .status-banner.error {
+            border-left-color: #f00;
         }
 
-        .status-ok { background: #0f0; }
-        .status-error { background: #f00; }
-        .status-pending { background: #ff0; }
+        .status-banner.pending {
+            border-left-color: #ff0;
+        }
     </style>
 </head>
 <body>
@@ -325,9 +322,7 @@
     <button class="nav-btn" data-screen="rating">🏆 Рейтинг</button>
 </div>
 
-<div id="statusBanner" class="debug-banner">
-    <div><span class="status-icon status-pending"></span>Загрузка...</div>
-</div>
+<div id="statusBanner" class="status-banner">✅ Готово</div>
 
 <audio id="clickSound0" preload="auto"><source src="clicking.wav" type="audio/wav"></audio>
 <audio id="clickSound1" preload="auto"><source src="clicking.wav" type="audio/wav"></audio>
@@ -336,10 +331,6 @@
 <audio id="clickSound4" preload="auto"><source src="clicking.wav" type="audio/wav"></audio>
 
 <script>
-    // ========================================
-    // КОНФИГУРАЦИЯ
-    // ========================================
-    
     const UPGRADES = {
         power: [
             { baseCost: 0.5, basePower: 0.001, multiplier: 1.4, name: "Младший транзистор", desc: "+0.001 силы" },
@@ -391,15 +382,21 @@
         userId: null,
         lastSaveTime: 0,
         soundIndex: 0,
+        loadTimeout: null,
 
         // ========================================
         // ИНИЦИАЛИЗАЦИЯ
         // ========================================
         init() {
-            console.log("[INIT] Запуск инициализации...");
+            console.log("[INIT] Запуск");
             
-            this.initTelegram();
-            this.loadGame();
+            // 1. Загружаем из localStorage ТУ ЖЕ СЕКУНДУ (синхронно)
+            this.loadFromLocalStorageSync();
+            
+            // 2. Инициализируем Telegram и запускаем ФОНОВУЮ загрузку (БЕЗ блокировки)
+            this.initTelegramAsync();
+            
+            // 3. Сразу запускаем игру с данными из localStorage
             this.recalcStats();
             this.updateUI();
             this.renderShop();
@@ -407,41 +404,120 @@
             this.startAutoSave();
             this.startPassiveIncome();
             
-            console.log("[INIT] Завершено");
-            this.updateStatusBanner("✅ Готово");
+            console.log("[INIT] Готово");
+            this.updateStatus("✅ Готово");
         },
 
         // ========================================
-        // TELEGRAM ИНИЦИАЛИЗАЦИЯ
+        // СИНХРОННАЯ ЗАГРУЗКА ИЗ LOCALSTORAGE (НЕ БЛОКИРУЕТ)
         // ========================================
+        loadFromLocalStorageSync() {
+            const storageKey = "mining_game_data";
+            console.log("[LocalStorage] Загрузка синхронно...");
+
+            try {
+                const saved = localStorage.getItem(storageKey);
+                
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    console.log("[LocalStorage] ✅ Данные найдены");
+                    this.applyLoadedData(data);
+                } else {
+                    console.log("[LocalStorage] Нет данных, новая игра");
+                    this.startNewGame();
+                }
+            } catch (e) {
+                console.error("[LocalStorage] ❌ Ошибка:", e);
+                this.startNewGame();
+            }
+        },
+
+        // ========================================
+        // АСИНХРОННАЯ ЗАГРУЗКА ИЗ TELEGRAM (В ФОНЕ)
+        // ========================================
+        initTelegramAsync() {
+            // НЕ ждём результат, просто запускаем в фоне
+            setTimeout(() => {
+                this.initTelegram();
+            }, 0);
+        },
+
         initTelegram() {
             try {
                 this.webApp = window.Telegram?.WebApp;
                 
                 if (this.webApp) {
-                    this.isInTelegram = true;
                     this.webApp.ready();
                     this.webApp.expand();
                     
-                    // КРИТИЧНО: Получаем user_id из Telegram
                     const initData = this.webApp.initDataUnsafe;
                     if (initData && initData.user) {
                         this.userId = initData.user.id;
-                        console.log("[Telegram] ✅ User ID получен:", this.userId);
+                        console.log("[Telegram] ✅ User ID:", this.userId);
+                        this.isInTelegram = true;
+                        
+                        // Теперь пробуем загрузить из Telegram (с таймаутом!)
+                        this.loadFromTelegramWithTimeout();
                     } else {
-                        console.log("[Telegram] ⚠️ User ID не найден, используем localStorage");
-                        this.isInTelegram = false;
+                        console.log("[Telegram] Нет user ID");
                     }
-                    
-                    console.log("[Telegram] ✅ Инициализирован");
                 } else {
-                    console.log("[Telegram] ℹ️ Telegram не найден (браузер)");
-                    this.isInTelegram = false;
+                    console.log("[Telegram] Не доступен");
                 }
             } catch (e) {
-                console.error("[Telegram] ❌ Ошибка:", e);
-                this.isInTelegram = false;
+                console.error("[Telegram init] ❌", e);
             }
+        },
+
+        // ========================================
+        // ЗАГРУЗКА ИЗ TELEGRAM С ТАЙМАУТОМ (НЕ ЗАВИСАЕТ!)
+        // ========================================
+        loadFromTelegramWithTimeout() {
+            if (!this.isInTelegram || !this.userId) return;
+
+            const key = `mining_${this.userId}`;
+            console.log("[Telegram Load] Запрос ключа:", key);
+            
+            this.updateStatus("⏳ Синхронизация...", "pending");
+
+            // ТАЙМАУТ: если Telegram не ответит за 5 сек, прекратим ждать
+            this.loadTimeout = setTimeout(() => {
+                console.log("[Telegram Load] ⏱️ Таймаут 5 сек, пропускаем");
+                this.updateStatus("⚠️ Telegram медленный", "error");
+            }, 5000);
+
+            this.webApp.CloudStorage.getItem(key, (error, value) => {
+                // Отменяем таймаут если ответ пришёл
+                if (this.loadTimeout) {
+                    clearTimeout(this.loadTimeout);
+                    this.loadTimeout = null;
+                }
+
+                if (error) {
+                    console.error("[Telegram Load] ❌ Ошибка:", error);
+                    this.updateStatus("⚠️ TG ошибка", "error");
+                    return;
+                }
+
+                if (!value) {
+                    console.log("[Telegram Load] Пусто");
+                    this.updateStatus("💾 Сохраняю...", "pending");
+                    this.saveTelegram(); // Сохраняем текущее состояние
+                    return;
+                }
+
+                try {
+                    const data = JSON.parse(value);
+                    console.log("[Telegram Load] ✅ Загружено");
+                    this.applyLoadedData(data);
+                    this.recalcStats();
+                    this.updateUI();
+                    this.renderShop();
+                    this.updateStatus("✅ Синхронизировано");
+                } catch (e) {
+                    console.error("[Telegram Load] ❌ Parse ошибка:", e);
+                }
+            });
         },
 
         // ========================================
@@ -458,114 +534,44 @@
             
             // ВСЕГДА сохраняем в localStorage
             try {
-                const storageKey = this.userId ? `mining_${this.userId}` : "mining_game_data";
-                localStorage.setItem(storageKey, gameData);
-                console.log("[Save] ✅ localStorage:", storageKey);
-                this.updateStatusBanner("💾 Сохранено", "ok");
+                localStorage.setItem("mining_game_data", gameData);
+                console.log("[Save] ✅ localStorage");
             } catch (e) {
-                console.error("[Save] ❌ localStorage ошибка:", e);
-                this.updateStatusBanner("❌ Ошибка save", "error");
+                console.error("[Save] ❌", e);
             }
 
-            // Сохраняем в Telegram CloudStorage ЕСЛИ есть user_id
+            // Сохраняем в Telegram (если есть ID и есть CloudStorage)
             if (this.isInTelegram && this.userId && this.webApp?.CloudStorage) {
                 this.saveTelegram(gameData);
             }
         },
 
-        saveTelegram(gameData) {
+        saveTelegram(gameData = null) {
             const key = `mining_${this.userId}`;
+            const data = gameData || JSON.stringify(this.state);
             
             try {
-                this.webApp.CloudStorage.setItem(key, gameData, (error) => {
+                this.webApp.CloudStorage.setItem(key, data, (error) => {
                     if (error) {
-                        console.error("[Telegram Save] ❌ Ошибка:", error);
-                        this.updateStatusBanner("⚠️ TG save fail", "error");
+                        console.error("[Telegram Save] ❌", error);
                     } else {
-                        console.log("[Telegram Save] ✅ Успешно");
-                        this.updateStatusBanner("✅ TG sync", "ok");
+                        console.log("[Telegram Save] ✅");
                     }
                 });
             } catch (e) {
-                console.error("[Telegram Save] ❌ Exception:", e);
+                console.error("[Telegram Save] Exception:", e);
             }
         },
 
         // ========================================
-        // ЗАГРУЗКА
+        // ПРОЧИЕ МЕТОДЫ (БЕЗ ИЗМЕНЕНИЙ)
         // ========================================
-        loadGame() {
-            console.log("[Load] Начало загрузки...");
-            this.updateStatusBanner("⏳ Загрузка...", "pending");
-
-            if (this.isInTelegram && this.userId && this.webApp?.CloudStorage) {
-                this.loadFromTelegram();
-            } else {
-                this.loadFromLocalStorage();
-            }
-        },
-
-        loadFromTelegram() {
-            const key = `mining_${this.userId}`;
-            console.log("[Telegram Load] Ключ:", key);
-
-            this.webApp.CloudStorage.getItem(key, (error, value) => {
-                if (error) {
-                    console.error("[Telegram Load] ❌ Ошибка:", error);
-                    this.loadFromLocalStorage();
-                    return;
-                }
-
-                if (!value) {
-                    console.log("[Telegram Load] Пусто, используем localStorage");
-                    this.loadFromLocalStorage();
-                    return;
-                }
-
-                try {
-                    const data = JSON.parse(value);
-                    console.log("[Telegram Load] ✅ Данные загружены:", data);
-                    this.applyLoadedData(data);
-                    this.updateStatusBanner("✅ Загружено", "ok");
-                } catch (e) {
-                    console.error("[Telegram Load] ❌ JSON ошибка:", e);
-                    this.loadFromLocalStorage();
-                }
-            });
-        },
-
-        loadFromLocalStorage() {
-            const storageKey = this.userId ? `mining_${this.userId}` : "mining_game_data";
-            console.log("[LocalStorage Load] Ключ:", storageKey);
-
-            try {
-                const saved = localStorage.getItem(storageKey);
-                
-                if (saved) {
-                    const data = JSON.parse(saved);
-                    console.log("[LocalStorage Load] ✅ Данные есть:", data);
-                    this.applyLoadedData(data);
-                    this.updateStatusBanner("✅ Загружено", "ok");
-                } else {
-                    console.log("[LocalStorage Load] Новая игра");
-                    this.startNewGame();
-                    this.updateStatusBanner("🌟 Новая игра", "ok");
-                }
-            } catch (e) {
-                console.error("[LocalStorage Load] ❌ Ошибка:", e);
-                this.startNewGame();
-                this.updateStatusBanner("🌟 Новая игра", "ok");
-            }
-        },
-
         applyLoadedData(data) {
             this.state.score = data.score ?? 0;
             this.state.powerLevels = data.powerLevels ?? [0,0,0,0,0];
             this.state.miningLevels = data.miningLevels ?? [0,0,0,0,0];
             this.state.energyLevels = data.energyLevels ?? [0,0];
             this.state.currentEnergy = data.currentEnergy ?? CONFIG.BASE_MAX_ENERGY;
-            
-            console.log("[Data] ✅ Применены:", this.state);
         },
 
         startNewGame() {
@@ -578,9 +584,6 @@
             };
         },
 
-        // ========================================
-        // РАСЧЕТ СТАТОВ
-        // ========================================
         recalcStats() {
             let powerBonus = 0;
             for (let i = 0; i < this.state.powerLevels.length; i++) {
@@ -605,20 +608,13 @@
             }
         },
 
-        // ========================================
-        // UI
-        // ========================================
         updateUI() {
             const scoreElem = document.getElementById('score');
-            if (scoreElem) {
-                scoreElem.innerText = this.state.score.toFixed(4);
-            }
+            if (scoreElem) scoreElem.innerText = this.state.score.toFixed(4);
 
             const percent = (this.state.currentEnergy / this.stats.maxEnergy) * 100;
             const fillElem = document.getElementById('energyFill');
-            if (fillElem) {
-                fillElem.style.width = Math.min(100, percent) + '%';
-            }
+            if (fillElem) fillElem.style.width = Math.min(100, percent) + '%';
 
             const textElem = document.getElementById('energyText');
             if (textElem) {
@@ -678,9 +674,6 @@
             return '';
         },
 
-        // ========================================
-        // ПОКУПКИ
-        // ========================================
         buyUpgrade(type, idx) {
             const upgradeList = UPGRADES[type];
             const levelsList = this.state[type + 'Levels'];
@@ -702,8 +695,6 @@
                 
                 this.vibrate(50);
                 this.playClickSound();
-                
-                console.log(`[Buy] ${upgrade.name} уровень ${level + 1}`);
             } else {
                 this.showInsufficientFunds(cost - this.state.score);
                 this.vibrate(100);
@@ -719,9 +710,6 @@
             setTimeout(() => elem.remove(), 2000);
         },
 
-        // ========================================
-        // КЛИК
-        // ========================================
         clickChip(event) {
             if (this.state.currentEnergy < 1) {
                 this.vibrate(50);
@@ -772,9 +760,6 @@
             setTimeout(() => text.remove(), 500);
         },
 
-        // ========================================
-        // ЗВУКИ И ВИБРАЦИЯ
-        // ========================================
         playClickSound() {
             try {
                 const elem = document.getElementById('clickSound' + this.soundIndex);
@@ -784,9 +769,7 @@
                     elem.play().catch(() => {});
                 }
                 this.soundIndex = (this.soundIndex + 1) % 5;
-            } catch (e) {
-                console.warn("[Sound] Ошибка:", e);
-            }
+            } catch (e) {}
         },
 
         vibrate(duration) {
@@ -795,9 +778,6 @@
             }
         },
 
-        // ========================================
-        // НАВИГАЦИЯ
-        // ========================================
         showScreen(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             const target = document.getElementById(id + 'Screen');
@@ -832,9 +812,6 @@
             if (activeContainer) activeContainer.style.display = 'flex';
         },
 
-        // ========================================
-        // АВТОСОХРАНЕНИЕ И ДОХОД
-        // ========================================
         startAutoSave() {
             setInterval(() => {
                 this.saveGame();
@@ -855,9 +832,6 @@
             }, 1000);
         },
 
-        // ========================================
-        // ОБРАБОТЧИКИ СОБЫТИЙ
-        // ========================================
         setupEventListeners() {
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -880,33 +854,17 @@
             }, { once: true });
         },
 
-        // ========================================
-        // СТАТУС БАННЕР (вместо консоли)
-        // ========================================
-        updateStatusBanner(message, status = "ok") {
+        updateStatus(message, status = "ok") {
             const banner = document.getElementById('statusBanner');
             if (!banner) return;
 
-            const icon = banner.querySelector('.status-icon');
-            const div = banner.querySelector('div');
-
-            if (status === "ok") {
-                icon.className = 'status-icon status-ok';
-            } else if (status === "error") {
-                icon.className = 'status-icon status-error';
+            banner.textContent = message;
+            banner.className = 'status-banner';
+            
+            if (status === "error") {
+                banner.classList.add('error');
             } else if (status === "pending") {
-                icon.className = 'status-icon status-pending';
-            }
-
-            if (div) {
-                div.textContent = message;
-            }
-
-            // Скрыть через 3 секунды если всё ОК
-            if (status === "ok") {
-                setTimeout(() => {
-                    if (banner) banner.style.opacity = '0.5';
-                }, 3000);
+                banner.classList.add('pending');
             }
         }
     };

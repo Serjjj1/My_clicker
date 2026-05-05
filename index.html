@@ -384,7 +384,7 @@
     <div class="logs-container" id="logsContainer"></div>
     <div class="log-controls">
         <button class="log-btn" onclick="GameManager.clearLogs()">🗑️ Очистить</button>
-        <button class="log-btn" onclick="GameManager.exportLogs()">📥 Экспорт</button>
+        <button class="log-btn" onclick="GameManager.exportLogs()">📋 Копировать</button>
     </div>
 </div>
 
@@ -452,7 +452,6 @@
         userId: null,
         lastSaveTime: 0,
         soundIndex: 0,
-        loadTimeout: null,
         logs: [],
 
         // ========================================
@@ -474,7 +473,6 @@
             container.innerHTML = '';
             const fragment = document.createDocumentFragment();
 
-            // Показываем последние 100 логов
             const recentLogs = this.logs.slice(-100);
 
             for (const log of recentLogs) {
@@ -485,7 +483,6 @@
             }
 
             container.appendChild(fragment);
-            // Скроллим вниз
             container.scrollTop = container.scrollHeight;
         },
 
@@ -497,14 +494,14 @@
 
         exportLogs() {
             const text = this.logs.map(l => l.message).join('\n');
-            const element = document.createElement("a");
-            element.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(text));
-            element.setAttribute("download", "game_logs.txt");
-            element.style.display = "none";
-            document.body.appendChild(element);
-            element.click();
-            document.body.removeChild(element);
-            this.log('Логи экспортированы', 'info');
+            
+            // Копируем в буфер обмена
+            navigator.clipboard.writeText(text).then(() => {
+                this.log('✅ Логи скопированы в буфер обмена!', 'info');
+                alert('Логи скопированы! Теперь можешь их отправить.');
+            }).catch(err => {
+                this.log(`❌ Ошибка копирования: ${err}`, 'error');
+            });
         },
 
         // ========================================
@@ -512,10 +509,13 @@
         // ========================================
         init() {
             this.log('=== ЗАПУСК ИГРЫ ===', 'debug');
-            this.log('Загрузка из localStorage...', 'info');
+            this.updateStatus("⏳ Инициализация...", "pending");
             
-            this.loadFromLocalStorageSync();
-            this.initTelegramAsync();
+            // 1. Инициализируем Telegram сразу
+            this.initTelegram();
+            
+            // 2. Загружаем данные (Telegram приоритет!)
+            this.loadGame();
             
             this.recalcStats();
             this.updateUI();
@@ -529,9 +529,91 @@
         },
 
         // ========================================
-        // СИНХРОННАЯ ЗАГРУЗКА
+        // TELEGRAM ИНИЦИАЛИЗАЦИЯ
         // ========================================
-        loadFromLocalStorageSync() {
+        initTelegram() {
+            try {
+                this.webApp = window.Telegram?.WebApp;
+                
+                if (this.webApp) {
+                    this.webApp.ready();
+                    this.webApp.expand();
+                    this.log('✅ Telegram WebApp инициализирован', 'info');
+                    
+                    const initData = this.webApp.initDataUnsafe;
+                    
+                    if (initData && initData.user) {
+                        this.userId = initData.user.id;
+                        this.isInTelegram = true;
+                        this.log(`✅ Telegram User ID: ${this.userId}`, 'info');
+                    } else {
+                        this.log('⚠️ Telegram: нет user ID (возможно браузер)', 'warning');
+                        this.isInTelegram = false;
+                    }
+                } else {
+                    this.log('ℹ️ Telegram WebApp не доступен (браузер)', 'info');
+                    this.isInTelegram = false;
+                }
+            } catch (e) {
+                this.log(`❌ Telegram init ошибка: ${e.message}`, 'error');
+                this.isInTelegram = false;
+            }
+        },
+
+        // ========================================
+        // ЗАГРУЗКА ДАННЫХ (Telegram приоритет!)
+        // ========================================
+        loadGame() {
+            if (this.isInTelegram && this.userId && this.webApp?.CloudStorage) {
+                this.log('Загрузка из Telegram CloudStorage (приоритет)...', 'debug');
+                this.loadFromTelegramWithTimeout();
+            } else {
+                this.log('Загрузка из localStorage (резерв)...', 'debug');
+                this.loadFromLocalStorage();
+            }
+        },
+
+        loadFromTelegramWithTimeout() {
+            const key = `mining_${this.userId}`;
+            this.log(`Telegram ключ: ${key}`, 'debug');
+            
+            this.updateStatus("⏳ Загрузка Telegram...", "pending");
+
+            // Таймаут 5 секунд
+            const timeoutId = setTimeout(() => {
+                this.log('⏱️ Telegram таймаут (5 сек), используем localStorage', 'warning');
+                this.loadFromLocalStorage();
+                this.updateStatus("⚠️ Используем кэш", "error");
+            }, 5000);
+
+            this.webApp.CloudStorage.getItem(key, (error, value) => {
+                clearTimeout(timeoutId);
+
+                if (error) {
+                    this.log(`❌ Telegram getItem: ${error}`, 'error');
+                    this.loadFromLocalStorage();
+                    return;
+                }
+
+                if (!value) {
+                    this.log('Telegram пуст, используем localStorage', 'info');
+                    this.loadFromLocalStorage();
+                    return;
+                }
+
+                try {
+                    const data = JSON.parse(value);
+                    this.log(`✅ Telegram загружено: score=${data.score.toFixed(2)}`, 'info');
+                    this.applyLoadedData(data);
+                    this.updateStatus("✅ Синхронизировано с Telegram");
+                } catch (e) {
+                    this.log(`❌ Telegram JSON ошибка: ${e.message}`, 'error');
+                    this.loadFromLocalStorage();
+                }
+            });
+        },
+
+        loadFromLocalStorage() {
             const storageKey = "mining_game_data";
 
             try {
@@ -539,11 +621,13 @@
                 
                 if (saved) {
                     const data = JSON.parse(saved);
-                    this.log(`✅ localStorage загружено (score: ${data.score})`, 'info');
+                    this.log(`✅ localStorage загружено: score=${data.score.toFixed(2)}`, 'info');
                     this.applyLoadedData(data);
+                    this.updateStatus("✅ Загружено (кэш)");
                 } else {
-                    this.log('Нет данных в localStorage, новая игра', 'info');
+                    this.log('Нет данных, новая игра', 'info');
                     this.startNewGame();
+                    this.updateStatus("🌟 Новая игра");
                 }
             } catch (e) {
                 this.log(`❌ localStorage ошибка: ${e.message}`, 'error');
@@ -552,92 +636,7 @@
         },
 
         // ========================================
-        // TELEGRAM ИНИЦИАЛИЗАЦИЯ
-        // ========================================
-        initTelegramAsync() {
-            setTimeout(() => {
-                this.initTelegram();
-            }, 0);
-        },
-
-        initTelegram() {
-            try {
-                this.webApp = window.Telegram?.WebApp;
-                
-                if (this.webApp) {
-                    this.webApp.ready();
-                    this.webApp.expand();
-                    
-                    const initData = this.webApp.initDataUnsafe;
-                    this.log(`Telegram initData: ${JSON.stringify(initData)}`, 'debug');
-                    
-                    if (initData && initData.user) {
-                        this.userId = initData.user.id;
-                        this.log(`✅ Telegram User ID: ${this.userId}`, 'info');
-                        this.isInTelegram = true;
-                        this.loadFromTelegramWithTimeout();
-                    } else {
-                        this.log('⚠️ Telegram: нет user ID', 'warning');
-                    }
-                } else {
-                    this.log('ℹ️ Telegram не доступен (браузер)', 'info');
-                }
-            } catch (e) {
-                this.log(`❌ Telegram init ошибка: ${e.message}`, 'error');
-            }
-        },
-
-        // ========================================
-        // ЗАГРУЗКА ИЗ TELEGRAM
-        // ========================================
-        loadFromTelegramWithTimeout() {
-            if (!this.isInTelegram || !this.userId) return;
-
-            const key = `mining_${this.userId}`;
-            this.log(`Запрос Telegram CloudStorage ключ: ${key}`, 'debug');
-            
-            this.updateStatus("⏳ Синхронизация...", "pending");
-
-            this.loadTimeout = setTimeout(() => {
-                this.log('⏱️ Telegram таймаут (5 сек)', 'warning');
-                this.updateStatus("⚠️ Telegram медленный", "error");
-            }, 5000);
-
-            this.webApp.CloudStorage.getItem(key, (error, value) => {
-                if (this.loadTimeout) {
-                    clearTimeout(this.loadTimeout);
-                    this.loadTimeout = null;
-                }
-
-                if (error) {
-                    this.log(`❌ Telegram getItem ошибка: ${error}`, 'error');
-                    this.updateStatus("⚠️ TG ошибка", "error");
-                    return;
-                }
-
-                if (!value) {
-                    this.log('Telegram CloudStorage пуст, сохраняю текущее состояние', 'info');
-                    this.updateStatus("💾 Сохраняю...", "pending");
-                    this.saveTelegram();
-                    return;
-                }
-
-                try {
-                    const data = JSON.parse(value);
-                    this.log(`✅ Telegram загружено (score: ${data.score})`, 'info');
-                    this.applyLoadedData(data);
-                    this.recalcStats();
-                    this.updateUI();
-                    this.renderShop();
-                    this.updateStatus("✅ Синхронизировано");
-                } catch (e) {
-                    this.log(`❌ Telegram JSON ошибка: ${e.message}`, 'error');
-                }
-            });
-        },
-
-        // ========================================
-        // СОХРАНЕНИЕ
+        // СОХРАНЕНИЕ (Telegram приоритет!)
         // ========================================
         saveGame() {
             const now = Date.now();
@@ -648,32 +647,40 @@
 
             const gameData = JSON.stringify(this.state);
             
-            try {
-                localStorage.setItem("mining_game_data", gameData);
-                this.log(`💾 localStorage сохранено (score: ${this.state.score})`, 'debug');
-            } catch (e) {
-                this.log(`❌ localStorage save ошибка: ${e.message}`, 'error');
-            }
-
+            // 1. ГЛАВНОЕ: сохраняем в Telegram CloudStorage
             if (this.isInTelegram && this.userId && this.webApp?.CloudStorage) {
-                this.saveTelegram(gameData);
+                this.saveTelegramCloudStorage(gameData);
+            } else {
+                // 2. РЕЗЕРВ: если нет Telegram, сохраняем в localStorage
+                this.saveToLocalStorage(gameData);
             }
         },
 
-        saveTelegram(gameData = null) {
+        saveTelegramCloudStorage(gameData) {
             const key = `mining_${this.userId}`;
-            const data = gameData || JSON.stringify(this.state);
             
             try {
-                this.webApp.CloudStorage.setItem(key, data, (error) => {
+                this.webApp.CloudStorage.setItem(key, gameData, (error) => {
                     if (error) {
-                        this.log(`❌ Telegram save ошибка: ${error}`, 'error');
+                        this.log(`❌ Telegram save: ${error}`, 'error');
+                        // Резерв: сохраняем в localStorage если Telegram упал
+                        this.saveToLocalStorage(gameData);
                     } else {
-                        this.log(`✅ Telegram сохранено (score: ${this.state.score})`, 'debug');
+                        this.log(`💾 Telegram сохранено: score=${this.state.score.toFixed(2)}`, 'debug');
                     }
                 });
             } catch (e) {
-                this.log(`❌ Telegram save exception: ${e.message}`, 'error');
+                this.log(`❌ Telegram exception: ${e.message}`, 'error');
+                this.saveToLocalStorage(gameData);
+            }
+        },
+
+        saveToLocalStorage(gameData) {
+            try {
+                localStorage.setItem("mining_game_data", gameData);
+                this.log(`💾 localStorage сохранено: score=${this.state.score.toFixed(2)}`, 'debug');
+            } catch (e) {
+                this.log(`❌ localStorage save: ${e.message}`, 'error');
             }
         },
 
@@ -696,7 +703,6 @@
                 energyLevels: [0,0],
                 currentEnergy: CONFIG.BASE_MAX_ENERGY
             };
-            this.log('🌟 Новая игра', 'info');
         },
 
         recalcStats() {
